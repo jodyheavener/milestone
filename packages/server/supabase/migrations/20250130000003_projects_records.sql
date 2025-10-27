@@ -4,8 +4,7 @@
 -- Table: project
 create table public.project (
   id              uuid        primary key default gen_random_uuid(),
-  user_id         uuid        not null
-                  references public.user(id) on delete cascade,
+  user_id         uuid        not null,
   goal            text        not null,
   created_at      timestamptz not null default now(),
   updated_at      timestamptz not null default now()
@@ -14,8 +13,7 @@ create table public.project (
 -- Table: record
 create table public.record (
   id              uuid        primary key default gen_random_uuid(),
-  user_id         uuid        not null
-                  references public.user(id) on delete cascade,
+  user_id         uuid        not null,
   content         text        not null,
   content_tsv     tsvector,
   metadata        jsonb,

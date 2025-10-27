@@ -15,7 +15,11 @@ interface AuthContextType {
 	user: User | null;
 	loading: boolean;
 	isLoggedIn: boolean;
-	signUpStandard: (email: string, password: string) => Promise<void>;
+	signUpStandard: (
+		name: string,
+		email: string,
+		password: string
+	) => Promise<void>;
 	signInStandard: (email: string, password: string) => Promise<void>;
 	signOut: () => Promise<void>;
 }
@@ -75,10 +79,15 @@ export function AuthProvider({
 	}, [session, supabase.auth]);
 
 	const signUpStandard = useCallback(
-		async (email: string, password: string) => {
+		async (name: string, email: string, password: string) => {
 			const { data, error } = await supabase.auth.signUp({
 				email,
 				password,
+				options: {
+					data: {
+						name: name,
+					},
+				},
 			});
 
 			if (error) throw error;
@@ -88,7 +97,7 @@ export function AuthProvider({
 				return;
 			}
 		},
-		[supabase.auth]
+		[supabase]
 	);
 
 	const signInStandard = useCallback(
