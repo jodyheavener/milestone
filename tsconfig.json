@@ -1,0 +1,32 @@
+{
+	"files": [],
+	"references": [
+		{
+			"path": "./packages/shared"
+		},
+		{
+			"path": "./packages/client"
+		}
+	],
+	"compilerOptions": {
+		"composite": true,
+		"target": "ES2022",
+		"lib": [
+			"ES2022",
+			"DOM"
+		],
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"allowSyntheticDefaultImports": true,
+		"esModuleInterop": true,
+		"allowJs": true,
+		"strict": true,
+		"isolatedModules": true,
+		"skipLibCheck": true,
+		"forceConsistentCasingInFileNames": true,
+		"resolveJsonModule": true,
+		"sourceMap": true,
+		"declaration": true,
+		"declarationMap": true
+	}
+}

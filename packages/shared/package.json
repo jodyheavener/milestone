@@ -1,0 +1,32 @@
+{
+	"name": "@m/shared",
+	"version": "0.0.1",
+	"author": "Jody Textor-Heavener",
+	"type": "module",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "tsc --build",
+		"dev": "tsc --build --watch",
+		"lint/check": "eslint src",
+		"lint/fix": "eslint src --fix",
+		"format/check": "prettier --check src",
+		"format/fix": "prettier --write src",
+		"lint/types": "tsc --noEmit",
+		"clean/build": "rm -rf dist tsconfig.tsbuildinfo",
+		"clean/deps": "rm -rf node_modules"
+	},
+	"devDependencies": {
+		"typescript": "~5.9.3"
+	},
+	"packageManager": "pnpm@10.19.0"
+}

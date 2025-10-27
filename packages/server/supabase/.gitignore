@@ -1,0 +1,11 @@
+# Supabase
+.branches
+.temp
+
+# Deno lockfile (managed by Supabase edge runtime)
+**/functions/deno.lock
+
+# dotenvx
+.env.keys
+.env.local
+.env.*.local

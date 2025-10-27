@@ -1,0 +1,56 @@
+{
+	"name": "@m/client",
+	"private": true,
+	"version": "0.0.1",
+	"type": "module",
+	"scripts": {
+		"build": "react-router build",
+		"clean/build": "rm -rf dist tsconfig.tsbuildinfo",
+		"clean/deps": "rm -rf node_modules",
+		"dev": "react-router dev --watch",
+		"format/check": "prettier --check app",
+		"format/fix": "prettier --write app",
+		"lint/check": "eslint .",
+		"lint/fix": "eslint --fix .",
+		"lint/types": "tsc --noEmit",
+		"router/routes": "react-router routes",
+		"router/types": "react-router typegen",
+		"serve": "react-router-serve ./dist/server/index.js"
+	},
+	"dependencies": {
+		"@m/shared": "workspace:*",
+		"@react-router/node": "^7.5.3",
+		"@react-router/serve": "^7.5.3",
+		"@supabase/ssr": "^0.7.0",
+		"@supabase/supabase-js": "^2.50.0",
+		"@vercel/react-router": "^1.1.2",
+		"ahooks": "^3.9.5",
+		"clsx": "^2.1.1",
+		"isbot": "^5",
+		"lucide-react": "^0.548.0",
+		"react": "^19.1.0",
+		"react-dom": "^19.1.0",
+		"react-router": "^7.6.1"
+	},
+	"devDependencies": {
+		"@eslint-react/eslint-plugin": "^2.2.4",
+		"@react-router/dev": "^7.6.1",
+		"@tailwindcss/vite": "^4.1.5",
+		"@types/node": "^22.18.12",
+		"@types/react": "^19.1.2",
+		"@types/react-dom": "^19.1.2",
+		"@vercel/node": "^5.3.0",
+		"eslint-plugin-react-hooks": "^7.0.1",
+		"globals": "^16.2.0",
+		"tailwind-merge": "^3.2.0",
+		"tailwindcss": "^4.1.5",
+		"typescript": "~5.9.3",
+		"vite": "^7.1.12",
+		"vite-plugin-svgr": "^4.3.0",
+		"vite-tsconfig-paths": "^5.1.4"
+	},
+	"engines": {
+		"node": "^22.0.0"
+	},
+	"packageManager": "pnpm@10.19.0"
+}

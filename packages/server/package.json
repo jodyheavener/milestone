@@ -1,0 +1,20 @@
+{
+	"name": "@m/server",
+	"version": "0.0.1",
+	"type": "module",
+	"scripts": {
+		"clean/deps": "rm -rf node_modules",
+		"dev": "supabase functions serve",
+		"format/check": "deno fmt --check --config supabase/functions/deno.json",
+		"format/fix": "deno fmt --config supabase/functions/deno.json",
+		"info": "supabase status",
+		"lint/check": "deno lint --config supabase/functions/deno.json",
+		"lint/fix": "deno lint --fix --config supabase/functions/deno.json",
+		"start": "supabase start",
+		"stop": "supabase stop"
+	},
+	"packageManager": "pnpm@10.19.0",
+	"devDependencies": {
+		"deno": "^2.4.3"
+	}
+}

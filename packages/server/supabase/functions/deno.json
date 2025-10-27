@@ -1,0 +1,25 @@
+{
+	"imports": {
+		"@m/shared": "../../../shared/src/index-deno.ts",
+		"~/library": "./_library/index.ts",
+		"@supabase/functions-js": "jsr:@supabase/functions-js@2/edge-runtime.d.ts",
+		"@supabase/supabase-js": "jsr:@supabase/supabase-js@2.50.0"
+	},
+	"fmt": {
+		"semiColons": true,
+		"singleQuote": false,
+		"lineWidth": 80,
+		"indentWidth": 2,
+		"useTabs": true,
+		"proseWrap": "preserve"
+	},
+	"lint": {
+		"rules": {
+			"tags": ["recommended"]
+		}
+	},
+	"compilerOptions": {
+		"lib": ["deno.ns", "deno.unstable", "dom"]
+	},
+	"nodeModulesDir": "auto"
+}

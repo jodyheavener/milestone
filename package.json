@@ -1,0 +1,41 @@
+{
+	"name": "milestone",
+	"private": true,
+	"type": "module",
+	"version": "0.0.0",
+	"description": "",
+	"main": "index.js",
+	"keywords": [],
+	"author": "Jody Textor-Heavener",
+	"workspaces": [
+		"packages/*"
+	],
+	"scripts": {
+		"build": "turbo run build",
+		"dev": "turbo run dev --parallel",
+		"lint": "turbo run lint",
+		"format": "turbo run format",
+		"lint/types": "turbo run lint/types",
+		"clean": "turbo run clean",
+		"build:shared": "pnpm --filter @m/shared build",
+		"build:client": "pnpm --filter @m/client build",
+		"build:server": "pnpm --filter @m/server build"
+	},
+	"devDependencies": {
+		"@eslint/js": "^9.32.0",
+		"@typescript-eslint/eslint-plugin": "^8.38.0",
+		"@typescript-eslint/parser": "^8.38.0",
+		"concurrently": "^9.2.0",
+		"eslint": "^9.32.0",
+		"eslint-config-prettier": "^10.1.8",
+		"prettier": "^3.6.2",
+		"turbo": "^2.5.5",
+		"typescript": "~5.9.3",
+		"typescript-eslint": "^8.38.0"
+	},
+	"engines": {
+		"node": ">=22.0.0",
+		"pnpm": ">=10.0.0"
+	},
+	"packageManager": "pnpm@10.19.0"
+}
