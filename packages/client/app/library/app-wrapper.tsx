@@ -1,16 +1,16 @@
-import type { Session } from "@supabase/supabase-js";
+import type { User } from "@supabase/supabase-js";
 import { AuthProvider } from "~/features/authentication";
 import { ThemeProvider } from "./theme";
 
 export function AppWrapper({
 	children,
-	session,
+	user,
 }: {
 	children: React.ReactNode;
-	session: Session | null;
+	user: User | null;
 }) {
 	return (
-		<AuthProvider initialSession={session}>
+		<AuthProvider initialUser={user}>
 			<ThemeProvider>{children}</ThemeProvider>
 		</AuthProvider>
 	);

@@ -4,38 +4,55 @@ import {
 	parseCookieHeader,
 	serializeCookieHeader,
 } from "@supabase/ssr";
+import type { SupabaseClient as SupabaseJSClient } from "@supabase/supabase-js";
 import type { Database } from "@m/shared";
-import { supabase } from "~/library/config";
+import { supabase as supabaseConfig } from "~/library/config";
 
 export function makeBrowserClient() {
-	return createBrowserClient<Database>(supabase.url, supabase.anonKey);
+	return createBrowserClient<Database>(
+		supabaseConfig.url,
+		supabaseConfig.anonKey
+	);
 }
 
-export function makeServerClient(request: Request) {
-	const headers = new Headers();
+export function makeServerClient(request: Request): {
+	supabase: SupabaseJSClient<Database>;
+	applyCookies: (response: Response) => Response;
+} {
+	const setCookieHeaders: string[] = [];
 
-	return createServerClient<Database>(supabase.url, supabase.anonKey, {
-		cookies: {
-			getAll() {
-				return parseCookieHeader(request.headers.get("Cookie") ?? "").map(
-					(cookie) => ({
-						name: cookie.name,
-						value: cookie.value ?? "",
-					})
-				);
+	const supabase = createServerClient<Database>(
+		supabaseConfig.url,
+		supabaseConfig.anonKey,
+		{
+			cookies: {
+				getAll() {
+					return parseCookieHeader(request.headers.get("Cookie") ?? "").map(
+						(cookie) => ({
+							name: cookie.name,
+							value: cookie.value ?? "",
+						})
+					);
+				},
+				setAll(cookiesToSet) {
+					cookiesToSet.forEach(({ name, value, options }) =>
+						setCookieHeaders.push(serializeCookieHeader(name, value, options))
+					);
+				},
 			},
-			setAll(cookiesToSet) {
-				cookiesToSet.forEach(({ name, value, options }) =>
-					headers.append(
-						"Set-Cookie",
-						serializeCookieHeader(name, value, options)
-					)
-				);
-			},
-		},
-	});
+		}
+	);
+
+	function applyCookies(response: Response) {
+		for (const sc of setCookieHeaders) {
+			response.headers.append("Set-Cookie", sc);
+		}
+		return response;
+	}
+
+	return { supabase, applyCookies };
 }
 
-export type SupabaseServerClient = ReturnType<typeof makeServerClient>;
-export type SupabaseBrowserClient = ReturnType<typeof makeBrowserClient>;
-export type SupabaseClient = SupabaseServerClient | SupabaseBrowserClient;
+export type SupabaseClient =
+	| ReturnType<typeof makeServerClient>["supabase"]
+	| ReturnType<typeof makeBrowserClient>;

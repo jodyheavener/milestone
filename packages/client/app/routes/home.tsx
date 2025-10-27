@@ -1,20 +1,15 @@
 import { Link, redirect } from "react-router";
 import { createPageTitle } from "~/library/utilities";
-import { makeServerClient } from "~/library/supabase";
+import { isLoggedIn } from "~/library/supabase";
 import type { Route } from "./+types/home";
 
-export async function loader({ request }: Route.LoaderArgs) {
-	const supabase = makeServerClient(request);
-	const {
-		data: { session },
-	} = await supabase.auth.getSession();
-
-	if (session) {
-		throw redirect("/projects");
-	}
-
-	return {};
-}
+export const middleware: Route.MiddlewareFunction[] = [
+	async ({ context }) => {
+		if (isLoggedIn(context)) {
+			throw redirect("/projects");
+		}
+	},
+];
 
 export function meta({}: Route.MetaArgs) {
 	return [

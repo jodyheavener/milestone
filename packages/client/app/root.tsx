@@ -3,8 +3,9 @@ import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
 import { ErrorContent, getErrorContent } from "~/features/errors";
 import type { Route } from "./+types/root";
 import { AppWrapper } from "~/library/app-wrapper";
-import { makeServerClient } from "~/library/supabase";
+import { makeServerClient, AuthContext } from "~/library/supabase";
 import { ThemeProvider } from "./library/theme";
+import { isAuthError, type User } from "@supabase/supabase-js";
 
 export const links: Route.LinksFunction = () => [
 	{
@@ -31,19 +32,36 @@ export const links: Route.LinksFunction = () => [
 	},
 ];
 
-export async function loader({ request }: Route.LoaderArgs) {
-	const supabase = makeServerClient(request);
+export const middleware: Route.MiddlewareFunction[] = [
+	async ({ request, context }, next) => {
+		const { supabase, applyCookies } = makeServerClient(request);
 
-	const {
-		data: { session },
-	} = await supabase.auth.getSession();
+		const { data, error } = await supabase.auth.getUser();
+		let user: User | null = null;
 
-	return {
-		session,
-	};
+		if (error) {
+			if (isAuthError(error)) {
+				await supabase.auth.signOut();
+			} else {
+				throw error;
+			}
+		} else {
+			user = data.user;
+		}
+
+		context.set(AuthContext, { supabase, user });
+
+		const response = await next();
+		return applyCookies(response);
+	},
+];
+
+export async function loader({ context }: Route.LoaderArgs) {
+	const { user } = context.get(AuthContext);
+	return { user };
 }
 
-export const shouldRevalidate = () => false;
+// export const shouldRevalidate = () => false;
 
 export function Layout({ children }: { children: React.ReactNode }) {
 	return (
@@ -63,11 +81,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
 	);
 }
 
-export default function Root({
-	loaderData: { session },
-}: Route.ComponentProps) {
+export default function Root({ loaderData: { user } }: Route.ComponentProps) {
 	return (
-		<AppWrapper session={session}>
+		<AppWrapper user={user}>
 			<Outlet />
 		</AppWrapper>
 	);

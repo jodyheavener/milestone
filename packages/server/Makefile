@@ -71,9 +71,10 @@ info: ## Display server information
 .PHONY: db/reset
 db/reset: ## Reset development server database
 	$(call START_TASK,CYAN,🗑️,Resetting development server database)
-	@read -p "Are you sure you want to reset the local database? (y/n): " confirm && \
-	if [ "$$confirm" = "y" ]; then \
+	@read -p "Are you sure you want to reset the local database? (Y/n): " confirm && \
+	if [ "$$confirm" = "Y" ]; then \
 		supabase db reset && \
+		$(MAKE) db/types && \
 		echo "${GREEN}✅ Finished resetting database${RESET}"; \
 	else \
 		echo "${CYAN}ℹ️ Database reset cancelled${RESET}"; \

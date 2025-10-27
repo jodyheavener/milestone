@@ -5,4 +5,7 @@ export default {
 	ssr: true,
 	presets: [vercelPreset()],
 	buildDirectory: "dist",
+	future: {
+		v8_middleware: true,
+	},
 } satisfies Config;

@@ -7,13 +7,15 @@ import {
 	useState,
 } from "react";
 import { useRevalidator } from "react-router";
-import type { Session, User } from "@supabase/supabase-js";
+import type { User } from "@supabase/supabase-js";
+import type { Tables } from "@m/shared";
 import { makeBrowserClient } from "~/library/supabase";
 
+type ProfileUser = User & Tables<"profile">;
+
 interface AuthContextType {
-	session: Session | null;
-	user: User | null;
-	loading: boolean;
+	user: ProfileUser | null;
+	isLoading: boolean;
 	isLoggedIn: boolean;
 	signUpStandard: (
 		name: string,
@@ -25,9 +27,8 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType>({
-	session: null,
 	user: null,
-	loading: true,
+	isLoading: true,
 	isLoggedIn: false,
 	signUpStandard: async () => {},
 	signInStandard: async () => {},
@@ -36,50 +37,63 @@ const AuthContext = createContext<AuthContextType>({
 
 export function AuthProvider({
 	children,
-	initialSession,
+	initialUser,
 }: {
 	children: React.ReactNode;
-	initialSession: Session | null;
+	initialUser: User | null;
 }) {
-	const [session, setSession] = useState<Session | null>(initialSession);
-	const [user, setUser] = useState<User | null>(initialSession?.user ?? null);
-	const [loading, setLoading] = useState(!initialSession);
+	const [user, setUser] = useState<ProfileUser | null>(null);
+	const [isLoading, setIsLoading] = useState(true);
 	const revalidator = useRevalidator();
 
 	const supabase = makeBrowserClient();
 
-	useEffect(() => {
-		if (!initialSession) {
-			supabase.auth.getSession().then(({ data: { session } }) => {
-				setSession(session);
-				setLoading(false);
-			});
-		}
+	// Helper function to load profile data for a user
+	const loadUserWithProfile = useCallback(
+		async (userToLoad: User) => {
+			try {
+				const { data: profile, error } = await supabase
+					.from("profile")
+					.select("*")
+					.eq("id", userToLoad.id)
+					.single();
 
-		const {
-			data: { subscription },
-		} = supabase.auth.onAuthStateChange((event, session) => {
-			setSession(session);
-			setLoading(false);
+				if (error) {
+					console.error("Error loading profile:", error);
+					return null;
+				}
 
-			// Revalidate all routes when auth state changes
-			// This ensures loaders re-run with new auth state
-			if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
-				revalidator.revalidate();
+				return { ...userToLoad, ...profile };
+			} catch (error) {
+				console.error("Error loading profile:", error);
+				return null;
 			}
-		});
+		},
+		[supabase]
+	);
 
-		return () => subscription.unsubscribe();
-	}, [initialSession, revalidator, supabase.auth]);
-
+	// Load profile data when we have a user but no profile
 	useEffect(() => {
-		supabase.auth.getUser().then(({ data: { user } }) => {
-			setUser(user);
-		});
-	}, [session, supabase.auth]);
+		const initializeUser = async () => {
+			if (!initialUser) {
+				setUser(null);
+				setIsLoading(false);
+				return;
+			}
+
+			// Load profile data for the user
+			const userWithProfile = await loadUserWithProfile(initialUser);
+			setUser(userWithProfile);
+			setIsLoading(false);
+		};
+
+		initializeUser();
+	}, [initialUser, loadUserWithProfile]);
 
 	const signUpStandard = useCallback(
 		async (name: string, email: string, password: string) => {
+			setIsLoading(true);
+
 			const { data, error } = await supabase.auth.signUp({
 				email,
 				password,
@@ -90,10 +104,15 @@ export function AuthProvider({
 				},
 			});
 
-			if (error) throw error;
+			setIsLoading(false);
+
+			if (error) {
+				throw error;
+			}
 
 			if (!data.session) {
-				// Email confirmation required - session will be created after confirmation
+				// Email confirmation required
+				// Session will be created after confirmation
 				return;
 			}
 		},
@@ -102,31 +121,53 @@ export function AuthProvider({
 
 	const signInStandard = useCallback(
 		async (email: string, password: string) => {
-			const { error } = await supabase.auth.signInWithPassword({
+			setIsLoading(true);
+
+			const { data, error } = await supabase.auth.signInWithPassword({
 				email,
 				password,
 			});
-			if (error) throw error;
+
+			if (error) {
+				setIsLoading(false);
+				throw error;
+			}
+
+			if (data.user) {
+				const userWithProfile = await loadUserWithProfile(data.user);
+				setUser(userWithProfile);
+			}
+
+			setIsLoading(false);
 		},
-		[supabase.auth]
+		[supabase.auth, loadUserWithProfile]
 	);
 
 	const signOut = useCallback(async () => {
+		setIsLoading(true);
+
 		const { error } = await supabase.auth.signOut();
-		if (error) throw error;
-	}, [supabase.auth]);
+
+		if (error) {
+			setIsLoading(false);
+			throw error;
+		}
+
+		setUser(null);
+		setIsLoading(false);
+		revalidator.revalidate();
+	}, [supabase.auth, revalidator]);
 
 	const value = useMemo(
 		() => ({
-			session,
 			user,
-			loading,
-			isLoggedIn: !!session,
+			isLoading,
+			isLoggedIn: !!user,
 			signUpStandard,
 			signInStandard,
 			signOut,
 		}),
-		[session, user, loading, signUpStandard, signInStandard, signOut]
+		[user, isLoading, signUpStandard, signInStandard, signOut]
 	);
 
 	return <AuthContext value={value}>{children}</AuthContext>;

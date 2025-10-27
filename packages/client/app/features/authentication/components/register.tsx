@@ -50,8 +50,7 @@ export function RegisterForm() {
 			}
 
 			await signUpStandard(data.name, data.email, data.password);
-			// After registration, redirect to login or show success message
-			navigate("/login");
+			navigate("/");
 		},
 		[signUpStandard, navigate, setFieldError]
 	);

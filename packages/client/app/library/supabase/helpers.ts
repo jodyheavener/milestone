@@ -1,11 +1,10 @@
-import { makeServerClient, type SupabaseClient } from "./clients";
+import type { RouterContextProvider } from "react-router";
+import { AuthContext } from "./auth";
+import type { SupabaseClient } from "./clients";
 
-export async function isLoggedIn(request: Request) {
-	const supabase = makeServerClient(request);
-	const {
-		data: { session },
-	} = await supabase.auth.getSession();
-	return session !== null;
+export function isLoggedIn(context: Readonly<RouterContextProvider>) {
+	const { user } = context.get(AuthContext);
+	return user !== null;
 }
 
 export async function sendFunction<T>(

@@ -5,6 +5,7 @@
 create table public.project (
   id              uuid        primary key default gen_random_uuid(),
   user_id         uuid        not null,
+  title           text        not null,
   goal            text        not null,
   created_at      timestamptz not null default now(),
   updated_at      timestamptz not null default now()
