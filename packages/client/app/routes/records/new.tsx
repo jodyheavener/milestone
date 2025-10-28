@@ -1,9 +1,18 @@
+import { useState } from "react";
 import { Link, redirect, Form, useNavigation } from "react-router";
 import { createPageTitle } from "~/library/utilities";
 import { AuthContext } from "~/library/supabase/auth";
-import { createProject } from "~/features/projects";
+import { createRecord } from "~/features/records";
+import { getProjects } from "~/features/projects";
+import { ProjectSelector } from "~/features/records";
 import { cn } from "~/library/utilities";
 import type { Route } from "./+types/new";
+
+export async function loader({ context }: Route.LoaderArgs) {
+	const { supabase } = context.get(AuthContext);
+	const projects = await getProjects(supabase);
+	return { projects };
+}
 
 export async function action({ request, context }: Route.ActionArgs) {
 	const { supabase, user } = context.get(AuthContext);
@@ -13,30 +22,29 @@ export async function action({ request, context }: Route.ActionArgs) {
 	}
 
 	const formData = await request.formData();
-	const title = formData.get("title");
-	const goal = formData.get("goal");
+	const content = formData.get("content");
+	const projectIds = formData.getAll("projectIds") as string[];
 
-	if (!title || !goal) {
+	if (!content) {
 		return {
-			error: "Title and goal are required",
+			error: "Content is required",
 		};
 	}
 
 	try {
-		await createProject(supabase, user, {
-			title: title.toString().trim(),
-			goal: goal.toString().trim(),
+		await createRecord(supabase, user, {
+			content: content.toString().trim(),
+			projectIds: projectIds.filter(Boolean),
 		});
 
-		throw redirect("/projects");
+		throw redirect("/records");
 	} catch (error) {
 		if (error instanceof Response) {
 			throw error;
 		}
 
 		return {
-			error:
-				error instanceof Error ? error.message : "Failed to create project",
+			error: error instanceof Error ? error.message : "Failed to create record",
 		};
 	}
 }
@@ -44,22 +52,27 @@ export async function action({ request, context }: Route.ActionArgs) {
 export function meta({}: Route.MetaArgs) {
 	return [
 		{
-			title: createPageTitle("New Project"),
+			title: createPageTitle("New Record"),
 		},
 	];
 }
 
-export default function Component({ actionData }: Route.ComponentProps) {
+export default function Component({
+	loaderData,
+	actionData,
+}: Route.ComponentProps) {
+	const { projects } = loaderData;
 	const navigation = useNavigation();
 	const isSubmitting = navigation.state === "submitting";
+	const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
 
 	return (
 		<div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
-			<div className="w-full max-w-md p-8 space-y-6">
+			<div className="w-full max-w-2xl p-8 space-y-6">
 				<div className="text-center">
-					<h1 className="text-2xl font-bold">New Project</h1>
+					<h1 className="text-2xl font-bold">New Record</h1>
 					<p className="mt-2 text-muted-foreground">
-						Create a new project to track your milestones
+						Create a new record to track your milestones
 					</p>
 				</div>
 
@@ -72,35 +85,36 @@ export default function Component({ actionData }: Route.ComponentProps) {
 
 					<div className="space-y-2">
 						<label
-							htmlFor="title"
+							htmlFor="content"
 							className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
 						>
-							Title
+							Content
 						</label>
-						<input
-							id="title"
-							name="title"
-							type="text"
+						<textarea
+							id="content"
+							name="content"
 							required
-							className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+							rows={8}
+							className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[120px] resize-none"
+							placeholder="Enter your record content here..."
 						/>
 					</div>
 
-					<div className="space-y-2">
-						<label
-							htmlFor="goal"
-							className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-						>
-							Goal
-						</label>
-						<textarea
-							id="goal"
-							name="goal"
-							required
-							rows={4}
-							className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[80px] resize-none"
+					<ProjectSelector
+						projects={projects}
+						selectedProjectIds={selectedProjectIds}
+						onSelectionChange={setSelectedProjectIds}
+					/>
+
+					{/* Hidden inputs for selected project IDs */}
+					{selectedProjectIds.map((projectId) => (
+						<input
+							key={projectId}
+							type="hidden"
+							name="projectIds"
+							value={projectId}
 						/>
-					</div>
+					))}
 
 					<div className="flex gap-4">
 						<button
@@ -111,10 +125,10 @@ export default function Component({ actionData }: Route.ComponentProps) {
 								"h-10 px-4 py-2 flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
 							)}
 						>
-							{isSubmitting ? "Creating..." : "Create Project"}
+							{isSubmitting ? "Creating..." : "Create Record"}
 						</button>
 						<Link
-							to="/projects"
+							to="/records"
 							className={cn(
 								"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
 								"h-10 px-4 py-2 bg-secondary text-secondary-foreground hover:bg-secondary/80"

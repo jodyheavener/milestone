@@ -1,6 +1,7 @@
 import {
 	index,
 	layout,
+	prefix,
 	route,
 	type RouteConfig,
 } from "@react-router/dev/routes";
@@ -16,9 +17,18 @@ const routes: RouteConfig = [
 	]),
 
 	layout("./layouts/authenticated.tsx", [
-		route("projects", "./routes/projects/list.tsx"),
-		route("projects/new", "./routes/projects/new.tsx"),
-		route("projects/:id", "./routes/projects/view.tsx"),
+		...prefix("projects", [
+			index("./routes/projects/list.tsx"),
+			route("new", "./routes/projects/new.tsx"),
+			route(":id", "./routes/projects/view.tsx"),
+			route(":id/edit", "./routes/projects/edit.tsx"),
+		]),
+		...prefix("records", [
+			index("./routes/records/list.tsx"),
+			route("new", "./routes/records/new.tsx"),
+			route(":id", "./routes/records/view.tsx"),
+			route(":id/edit", "./routes/records/edit.tsx"),
+		]),
 	]),
 ];
 

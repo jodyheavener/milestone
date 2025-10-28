@@ -1,17 +1,23 @@
 import { Link, redirect, Form, useNavigation } from "react-router";
 import { createPageTitle } from "~/library/utilities";
 import { AuthContext } from "~/library/supabase/auth";
-import { createProject } from "~/features/projects";
+import { getProject, updateProject } from "~/features/projects";
 import { cn } from "~/library/utilities";
-import type { Route } from "./+types/new";
+import type { Route } from "./+types/edit";
 
-export async function action({ request, context }: Route.ActionArgs) {
-	const { supabase, user } = context.get(AuthContext);
+export async function loader({ context, params }: Route.LoaderArgs) {
+	const { supabase } = context.get(AuthContext);
+	const project = await getProject(supabase, params.id);
 
-	if (!user) {
-		return { error: "User not authenticated" };
+	if (!project) {
+		throw redirect("/projects");
 	}
 
+	return { project };
+}
+
+export async function action({ request, params, context }: Route.ActionArgs) {
+	const { supabase } = context.get(AuthContext);
 	const formData = await request.formData();
 	const title = formData.get("title");
 	const goal = formData.get("goal");
@@ -23,12 +29,12 @@ export async function action({ request, context }: Route.ActionArgs) {
 	}
 
 	try {
-		await createProject(supabase, user, {
+		await updateProject(supabase, params.id, {
 			title: title.toString().trim(),
 			goal: goal.toString().trim(),
 		});
 
-		throw redirect("/projects");
+		throw redirect(`/projects/${params.id}`);
 	} catch (error) {
 		if (error instanceof Response) {
 			throw error;
@@ -36,30 +42,34 @@ export async function action({ request, context }: Route.ActionArgs) {
 
 		return {
 			error:
-				error instanceof Error ? error.message : "Failed to create project",
+				error instanceof Error ? error.message : "Failed to update project",
 		};
 	}
 }
 
-export function meta({}: Route.MetaArgs) {
+export function meta({ data }: Route.MetaArgs) {
 	return [
 		{
-			title: createPageTitle("New Project"),
+			title: createPageTitle("Edit Project"),
 		},
 	];
 }
 
-export default function Component({ actionData }: Route.ComponentProps) {
+export default function Component({
+	loaderData,
+	actionData,
+}: Route.ComponentProps) {
+	const { project } = loaderData;
 	const navigation = useNavigation();
 	const isSubmitting = navigation.state === "submitting";
 
 	return (
 		<div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
-			<div className="w-full max-w-md p-8 space-y-6">
-				<div className="text-center">
-					<h1 className="text-2xl font-bold">New Project</h1>
+			<div className="w-full max-w-2xl p-8 space-y-6">
+				<div>
+					<h1 className="text-2xl font-bold">Edit Project</h1>
 					<p className="mt-2 text-muted-foreground">
-						Create a new project to track your milestones
+						Update your project details
 					</p>
 				</div>
 
@@ -81,6 +91,7 @@ export default function Component({ actionData }: Route.ComponentProps) {
 							id="title"
 							name="title"
 							type="text"
+							defaultValue={project.title}
 							required
 							className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
 						/>
@@ -96,9 +107,10 @@ export default function Component({ actionData }: Route.ComponentProps) {
 						<textarea
 							id="goal"
 							name="goal"
+							defaultValue={project.goal}
 							required
-							rows={4}
-							className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[80px] resize-none"
+							rows={8}
+							className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[120px] resize-none"
 						/>
 					</div>
 
@@ -111,10 +123,10 @@ export default function Component({ actionData }: Route.ComponentProps) {
 								"h-10 px-4 py-2 flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
 							)}
 						>
-							{isSubmitting ? "Creating..." : "Create Project"}
+							{isSubmitting ? "Saving..." : "Save Changes"}
 						</button>
 						<Link
-							to="/projects"
+							to={`/projects/${project.id}`}
 							className={cn(
 								"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
 								"h-10 px-4 py-2 bg-secondary text-secondary-foreground hover:bg-secondary/80"

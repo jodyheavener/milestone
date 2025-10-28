@@ -1,6 +1,7 @@
 import { createPath, href, Outlet, redirect } from "react-router";
 import type { Route } from "./+types/authenticated";
 import { isLoggedIn } from "~/library/supabase";
+import { HeaderAuthenticated } from "~/features/site-header";
 
 export const middleware: Route.MiddlewareFunction[] = [
 	async ({ request, context }) => {
@@ -18,5 +19,10 @@ export const middleware: Route.MiddlewareFunction[] = [
 ];
 
 export default function LayoutAuthenticated() {
-	return <Outlet />;
+	return (
+		<div className="min-h-dvh bg-background">
+			<HeaderAuthenticated />
+			<Outlet />
+		</div>
+	);
 }

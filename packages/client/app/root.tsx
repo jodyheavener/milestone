@@ -61,8 +61,6 @@ export async function loader({ context }: Route.LoaderArgs) {
 	return { user };
 }
 
-// export const shouldRevalidate = () => false;
-
 export function Layout({ children }: { children: React.ReactNode }) {
 	return (
 		<html lang="en">
