@@ -29,6 +29,9 @@ const routes: RouteConfig = [
 			route(":id", "./routes/records/view.tsx"),
 			route(":id/edit", "./routes/records/edit.tsx"),
 		]),
+		...prefix("api/files", [
+			route(":id/download", "./routes/api/files/download.tsx"),
+		]),
 		...prefix("account", [
 			index("./routes/account/account.tsx"),
 			route("profile", "./routes/account/profile.tsx"),

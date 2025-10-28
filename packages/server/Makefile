@@ -94,6 +94,7 @@ db/new-migration: ## Create a new migration (Usage: make db/new-migration name=Y
 db/migrate: ## Run all pending migrations
 	$(call START_TASK,CYAN,🔄,Running all pending migrations)
 	@supabase migration up
+	$(MAKE) db/types
 	$(call END_TASK,running migrations)
 
 .PHONY: db/types

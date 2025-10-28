@@ -9,8 +9,8 @@ create table public.file (
   file_kind             text        not null,
   file_size             bigint      not null,
   storage_path          text        not null,
-  extracted_text        text,
-  extracted_text_tsv    tsvector,
+  extracted_content     text,
+  extracted_content_tsv tsvector,
   created_at            timestamptz not null default now()
 );
 
@@ -22,8 +22,8 @@ create table public.website (
   address               text        not null,
   page_title            text,
   last_updated_at       timestamptz,
-  extracted_text        text,
-  extracted_text_tsv    tsvector,
+  extracted_content     text,
+  extracted_content_tsv tsvector,
   created_at            timestamptz not null default now(),
   
   constraint uq_website_record_id_address unique (record_id, address)
@@ -34,13 +34,13 @@ create index if not exists idx_file_record_id
   on public.file (record_id);
 
 create index if not exists idx_file_text_tsv
-  on public.file using GIN (extracted_text_tsv);
+  on public.file using GIN (extracted_content_tsv);
 
 create index if not exists idx_website_record_id
   on public.website (record_id);
 
 create index if not exists idx_website_text_tsv
-  on public.website using GIN (extracted_text_tsv);
+  on public.website using GIN (extracted_content_tsv);
 
 -- Function: Update TSV for file extracted text
 create or replace function public.update_file_text_tsv()
@@ -50,7 +50,7 @@ security definer
 set search_path = ''
 as $$
 begin
-  NEW.extracted_text_tsv := to_tsvector('english', extensions.unaccent(COALESCE(NEW.extracted_text, '')));
+  NEW.extracted_content_tsv := to_tsvector('english', extensions.unaccent(COALESCE(NEW.extracted_content, '')));
   return NEW;
 end;
 $$;
@@ -63,7 +63,7 @@ security definer
 set search_path = ''
 as $$
 begin
-  NEW.extracted_text_tsv := to_tsvector('english', extensions.unaccent(COALESCE(NEW.extracted_text, '')));
+  NEW.extracted_content_tsv := to_tsvector('english', extensions.unaccent(COALESCE(NEW.extracted_content, '')));
   return NEW;
 end;
 $$;

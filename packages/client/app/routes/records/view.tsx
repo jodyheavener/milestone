@@ -38,6 +38,14 @@ export function meta({ loaderData }: Route.MetaArgs) {
 export default function Component({ loaderData }: Route.ComponentProps) {
 	const { record } = loaderData;
 
+	const formatFileSize = (bytes: number) => {
+		if (bytes === 0) return "0 Bytes";
+		const k = 1024;
+		const sizes = ["Bytes", "KB", "MB", "GB"];
+		const i = Math.floor(Math.log(bytes) / Math.log(k));
+		return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+	};
+
 	return (
 		<div className="p-8">
 			<div className="max-w-6xl mx-auto space-y-6">
@@ -112,6 +120,55 @@ export default function Component({ loaderData }: Route.ComponentProps) {
 							<span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-primary/10 text-primary">
 								Available to all projects
 							</span>
+						</div>
+					)}
+
+					{/* Attachment details */}
+					{(record.file || record.website) && (
+						<div className="space-y-2">
+							<h3 className="text-sm font-medium">Attachment:</h3>
+							<div className="p-3 border border-border rounded-lg bg-card">
+								{record.file ? (
+									<div className="space-y-2">
+										<div className="flex items-center justify-between">
+											<div>
+												<div className="text-sm font-medium">
+													File Attachment
+												</div>
+												<div className="text-xs text-muted-foreground">
+													{record.file.file_kind} •{" "}
+													{formatFileSize(record.file.file_size)}
+												</div>
+											</div>
+											<a
+												href={`/api/files/${record.file.id}/download`}
+												download
+												className={cn(
+													"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+													"h-8 px-3 py-1 bg-primary text-primary-foreground hover:bg-primary/90"
+												)}
+											>
+												Download
+											</a>
+										</div>
+									</div>
+								) : record.website ? (
+									<div className="space-y-2">
+										<div className="text-sm font-medium">Website Reference</div>
+										<div className="text-xs text-muted-foreground">
+											{record.website.page_title || "Untitled"}
+										</div>
+										<a
+											href={record.website.address}
+											target="_blank"
+											rel="noopener noreferrer"
+											className="text-sm text-primary hover:underline"
+										>
+											{record.website.address}
+										</a>
+									</div>
+								) : null}
+							</div>
 						</div>
 					)}
 				</div>

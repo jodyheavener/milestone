@@ -6,17 +6,26 @@ export type Record = Tables<"record">;
 export type RecordInsert = TablesInsert<"record">;
 export type RecordUpdate = TablesUpdate<"record">;
 export type RecordProject = Tables<"record_project">;
+export type FileAttachment = Tables<"file">;
+export type WebsiteAttachment = Tables<"website">;
 
 export interface RecordWithProjects extends Record {
 	projects?: Array<{
 		id: string;
 		title: string;
 	}>;
+	file?: FileAttachment;
+	website?: WebsiteAttachment;
 }
 
 export interface CreateRecordData {
 	content: string;
 	projectIds?: string[];
+	attachment?: {
+		type: "file" | "website";
+		file?: File;
+		websiteUrl?: string;
+	};
 }
 
 export interface UpdateRecordData {
@@ -61,6 +70,51 @@ export async function createRecord(
 		}
 	}
 
+	// Handle attachment if provided
+	if (data.attachment) {
+		if (data.attachment.type === "file" && data.attachment.file) {
+			// Create file attachment record first (with placeholder storage path)
+			const fileName = `${record.id}/${data.attachment.file.name}`;
+			const { error: fileError } = await supabase.from("file").insert({
+				record_id: record.id,
+				file_kind: data.attachment.file.type || "unknown",
+				file_size: data.attachment.file.size,
+				storage_path: fileName,
+				extracted_content: "", // Empty as requested
+			});
+
+			if (fileError) {
+				throw fileError;
+			}
+
+			// Then upload file to Supabase Storage
+			const { error: uploadError } = await supabase.storage
+				.from("attachments")
+				.upload(fileName, data.attachment.file);
+
+			if (uploadError) {
+				// If upload fails, clean up the database record
+				await supabase.from("file").delete().eq("record_id", record.id);
+				throw uploadError;
+			}
+		} else if (
+			data.attachment.type === "website" &&
+			data.attachment.websiteUrl
+		) {
+			// Create website attachment record with placeholder data
+			const { error: websiteError } = await supabase.from("website").insert({
+				record_id: record.id,
+				address: data.attachment.websiteUrl,
+				page_title: "Foo", // As requested
+				extracted_content: "", // Empty as requested
+			});
+
+			if (websiteError) {
+				throw websiteError;
+			}
+		}
+	}
+
 	return record;
 }
 
@@ -81,7 +135,9 @@ export async function getRecords(
 					id,
 					title
 				)
-			)
+			),
+			file (*),
+			website (*)
 		`
 		)
 		.order("created_at", {
@@ -97,6 +153,8 @@ export async function getRecords(
 		...record,
 		projects:
 			record.record_project?.map((rp) => rp.project).filter(Boolean) || [],
+		file: record.file?.[0] || undefined,
+		website: record.website?.[0] || undefined,
 	}));
 }
 
@@ -191,7 +249,9 @@ export async function getRecord(
 					id,
 					title
 				)
-			)
+			),
+			file (*),
+			website (*)
 		`
 		)
 		.eq("id", id)
@@ -209,6 +269,8 @@ export async function getRecord(
 		...record,
 		projects:
 			record.record_project?.map((rp) => rp.project).filter(Boolean) || [],
+		file: record.file?.[0] || undefined,
+		website: record.website?.[0] || undefined,
 	};
 }
 

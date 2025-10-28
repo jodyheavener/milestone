@@ -71,6 +71,14 @@ export default function Component({
 		() => record.projects?.map((p: { id: string }) => p.id) || []
 	);
 
+	const formatFileSize = (bytes: number) => {
+		if (bytes === 0) return "0 Bytes";
+		const k = 1024;
+		const sizes = ["Bytes", "KB", "MB", "GB"];
+		const i = Math.floor(Math.log(bytes) / Math.log(k));
+		return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+	};
+
 	return (
 		<div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
 			<div className="w-full max-w-2xl p-8 space-y-6">
@@ -110,6 +118,62 @@ export default function Component({
 						selectedProjectIds={selectedProjectIds}
 						onSelectionChange={setSelectedProjectIds}
 					/>
+
+					{/* Attachment context (read-only) */}
+					{(record.file || record.website) && (
+						<div className="space-y-3">
+							<div>
+								<label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+									Attachment
+								</label>
+								<p className="text-xs text-muted-foreground mt-1">
+									Attachments cannot be modified in edit mode
+								</p>
+							</div>
+							<div className="p-3 border border-border rounded-lg bg-muted/50">
+								{record.file ? (
+									<div className="space-y-2">
+										<div className="flex items-center justify-between">
+											<div>
+												<div className="text-sm font-medium">
+													File Attachment
+												</div>
+												<div className="text-xs text-muted-foreground">
+													{record.file.file_kind} •{" "}
+													{formatFileSize(record.file.file_size)}
+												</div>
+											</div>
+											<a
+												href={`/api/files/${record.file.id}/download`}
+												download
+												className={cn(
+													"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+													"h-8 px-3 py-1 bg-primary text-primary-foreground hover:bg-primary/90"
+												)}
+											>
+												Download
+											</a>
+										</div>
+									</div>
+								) : record.website ? (
+									<div className="space-y-2">
+										<div className="text-sm font-medium">Website Reference</div>
+										<div className="text-xs text-muted-foreground">
+											{record.website.page_title || "Untitled"}
+										</div>
+										<a
+											href={record.website.address}
+											target="_blank"
+											rel="noopener noreferrer"
+											className="text-sm text-primary hover:underline"
+										>
+											{record.website.address}
+										</a>
+									</div>
+								) : null}
+							</div>
+						</div>
+					)}
 
 					{/* Hidden inputs for selected project IDs */}
 					{selectedProjectIds.map((projectId) => (

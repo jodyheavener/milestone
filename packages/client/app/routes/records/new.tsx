@@ -10,7 +10,7 @@ import { createPageTitle } from "~/library/utilities";
 import { AuthContext } from "~/library/supabase/auth";
 import { createRecord } from "~/features/records";
 import { getProjects } from "~/features/projects";
-import { ProjectSelector } from "~/features/records";
+import { ProjectSelector, AttachmentSelector } from "~/features/records";
 import { cn } from "~/library/utilities";
 import type { Route } from "./+types/new";
 
@@ -30,6 +30,9 @@ export async function action({ request, context }: Route.ActionArgs) {
 	const formData = await request.formData();
 	const content = formData.get("content");
 	const projectIds = formData.getAll("projectIds") as string[];
+	const attachmentType = formData.get("attachmentType") as string;
+	const attachmentFile = formData.get("attachmentFile") as File | null;
+	const attachmentWebsiteUrl = formData.get("attachmentWebsiteUrl") as string;
 
 	if (!content) {
 		return {
@@ -38,9 +41,18 @@ export async function action({ request, context }: Route.ActionArgs) {
 	}
 
 	try {
+		const attachmentData = attachmentType
+			? {
+					type: attachmentType as "file" | "website",
+					file: attachmentFile || undefined,
+					websiteUrl: attachmentWebsiteUrl || undefined,
+				}
+			: undefined;
+
 		await createRecord(supabase, user, {
 			content: content.toString().trim(),
 			projectIds: projectIds.filter(Boolean),
+			attachment: attachmentData,
 		});
 
 		throw redirect("/records");
@@ -81,6 +93,12 @@ export default function Component({
 	const [selectedProjectIds, setSelectedProjectIds] =
 		useState<string[]>(initialProjectIds);
 
+	const [attachment, setAttachment] = useState<{
+		type: "file" | "website";
+		file?: File;
+		websiteUrl?: string;
+	} | null>(null);
+
 	return (
 		<div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
 			<div className="w-full max-w-2xl p-8 space-y-6">
@@ -91,7 +109,7 @@ export default function Component({
 					</p>
 				</div>
 
-				<Form method="post" className="space-y-4">
+				<Form method="post" encType="multipart/form-data" className="space-y-4">
 					{actionData?.error && (
 						<div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
 							{actionData.error}
@@ -121,6 +139,8 @@ export default function Component({
 						onSelectionChange={setSelectedProjectIds}
 					/>
 
+					<AttachmentSelector onAttachmentChange={setAttachment} />
+
 					{/* Hidden inputs for selected project IDs */}
 					{selectedProjectIds.map((projectId) => (
 						<input
@@ -130,6 +150,24 @@ export default function Component({
 							value={projectId}
 						/>
 					))}
+
+					{/* Hidden inputs for attachment data */}
+					{attachment && (
+						<>
+							<input
+								type="hidden"
+								name="attachmentType"
+								value={attachment.type}
+							/>
+							{attachment.type === "website" && attachment.websiteUrl && (
+								<input
+									type="hidden"
+									name="attachmentWebsiteUrl"
+									value={attachment.websiteUrl}
+								/>
+							)}
+						</>
+					)}
 
 					<div className="flex gap-4">
 						<button

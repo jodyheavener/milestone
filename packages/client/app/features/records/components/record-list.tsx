@@ -51,6 +51,15 @@ export function RecordList({ records }: RecordListProps) {
 								All Projects
 							</span>
 						)}
+
+						{/* Attachment indicator */}
+						{(record.file || record.website) && (
+							<div className="flex items-center gap-1 text-xs text-muted-foreground">
+								<span className="inline-flex items-center px-2 py-1 rounded-full bg-accent text-accent-foreground">
+									{record.file ? "📎 File" : "🌐 Website"}
+								</span>
+							</div>
+						)}
 					</div>
 				</Link>
 			))}
