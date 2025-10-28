@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { Link, redirect, Form, useNavigation } from "react-router";
+import {
+	Link,
+	redirect,
+	Form,
+	useNavigation,
+	useSearchParams,
+} from "react-router";
 import { createPageTitle } from "~/library/utilities";
 import { AuthContext } from "~/library/supabase/auth";
 import { createRecord } from "~/features/records";
@@ -64,7 +70,16 @@ export default function Component({
 	const { projects } = loaderData;
 	const navigation = useNavigation();
 	const isSubmitting = navigation.state === "submitting";
-	const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
+	const [searchParams] = useSearchParams();
+
+	// Initialize with pre-selected project from URL params
+	const projectParam = searchParams.get("project");
+	const initialProjectIds =
+		projectParam && projects.some((p) => p.id === projectParam)
+			? [projectParam]
+			: [];
+	const [selectedProjectIds, setSelectedProjectIds] =
+		useState<string[]>(initialProjectIds);
 
 	return (
 		<div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">

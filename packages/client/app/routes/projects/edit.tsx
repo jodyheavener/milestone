@@ -47,10 +47,10 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 	}
 }
 
-export function meta({ data }: Route.MetaArgs) {
+export function meta({ loaderData }: Route.MetaArgs) {
 	return [
 		{
-			title: createPageTitle("Edit Project"),
+			title: createPageTitle(`Edit Project: ${loaderData.project.title}`),
 		},
 	];
 }

@@ -97,7 +97,7 @@ export default function Component({ loaderData }: Route.ComponentProps) {
 					<div className="flex items-center justify-between">
 						<h2 className="text-xl font-semibold">Records</h2>
 						<Link
-							to="/records/new"
+							to={`/records/new?project=${project.id}`}
 							className={cn(
 								"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
 								"h-9 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90"
@@ -113,7 +113,7 @@ export default function Component({ loaderData }: Route.ComponentProps) {
 								No records yet for this project.
 							</p>
 							<Link
-								to="/records/new"
+								to={`/records/new?project=${project.id}`}
 								className="text-sm text-primary hover:underline mt-2 inline-block"
 							>
 								Create your first record

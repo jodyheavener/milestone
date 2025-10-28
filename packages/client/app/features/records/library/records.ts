@@ -96,7 +96,7 @@ export async function getRecords(
 	return records.map((record) => ({
 		...record,
 		projects:
-			record.record_project?.map((rp: any) => rp.project).filter(Boolean) || [],
+			record.record_project?.map((rp) => rp.project).filter(Boolean) || [],
 	}));
 }
 
@@ -162,8 +162,7 @@ export async function getRecordsForProject(
 		...records.map((record) => ({
 			...record,
 			projects:
-				record.record_project?.map((rp: any) => rp.project).filter(Boolean) ||
-				[],
+				record.record_project?.map((rp) => rp.project).filter(Boolean) || [],
 		})),
 		...unlinkedRecords.map((record) => ({
 			...record,
@@ -209,7 +208,7 @@ export async function getRecord(
 	return {
 		...record,
 		projects:
-			record.record_project?.map((rp: any) => rp.project).filter(Boolean) || [],
+			record.record_project?.map((rp) => rp.project).filter(Boolean) || [],
 	};
 }
 
@@ -223,7 +222,7 @@ export async function updateRecord(
 ): Promise<RecordWithProjects> {
 	// Update the record content if provided
 	if (data.content !== undefined) {
-		const { data: record, error } = await supabase
+		const { error } = await supabase
 			.from("record")
 			.update({ content: data.content })
 			.eq("id", id)

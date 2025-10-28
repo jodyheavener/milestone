@@ -29,6 +29,11 @@ const routes: RouteConfig = [
 			route(":id", "./routes/records/view.tsx"),
 			route(":id/edit", "./routes/records/edit.tsx"),
 		]),
+		...prefix("account", [
+			index("./routes/account/account.tsx"),
+			route("profile", "./routes/account/profile.tsx"),
+			route("delete", "./routes/account/delete.tsx"),
+		]),
 	]),
 ];
 

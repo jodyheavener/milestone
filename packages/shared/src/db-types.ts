@@ -193,33 +193,6 @@ export type Database = {
           },
         ]
       }
-      employer: {
-        Row: {
-          created_at: string
-          description: string | null
-          id: string
-          name: string
-          updated_at: string
-          website: string | null
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          name: string
-          updated_at?: string
-          website?: string | null
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          name?: string
-          updated_at?: string
-          website?: string | null
-        }
-        Relationships: []
-      }
       file: {
         Row: {
           created_at: string
@@ -264,7 +237,9 @@ export type Database = {
       profile: {
         Row: {
           created_at: string
-          employer_id: string | null
+          employer_description: string | null
+          employer_name: string | null
+          employer_website: string | null
           id: string
           job_title: string | null
           name: string
@@ -272,7 +247,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          employer_id?: string | null
+          employer_description?: string | null
+          employer_name?: string | null
+          employer_website?: string | null
           id: string
           job_title?: string | null
           name: string
@@ -280,21 +257,15 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          employer_id?: string | null
+          employer_description?: string | null
+          employer_name?: string | null
+          employer_website?: string | null
           id?: string
           job_title?: string | null
           name?: string
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "profile_employer_id_fkey"
-            columns: ["employer_id"]
-            isOneToOne: false
-            referencedRelation: "employer"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       project: {
         Row: {
@@ -515,7 +486,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      delete_user: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
