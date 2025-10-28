@@ -10,3 +10,7 @@ export const supabase = {
 };
 
 export const pingKey = parseString(Deno.env.get("PING_KEY"));
+
+export const openai = {
+	apiKey: parseString(Deno.env.get("OPENAI_API_KEY")),
+};

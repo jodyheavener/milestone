@@ -1,5 +1,9 @@
 export const serviceErrors = {
 	// Request errors
+	INTERNAL_ERROR: {
+		message: "An internal error occurred",
+		statusCode: 500,
+	},
 	METHOD_NOT_ALLOWED: {
 		message: "The requested method is not allowed",
 		statusCode: 405,
@@ -17,6 +21,16 @@ export const serviceErrors = {
 	INVALID_AUTH: {
 		message: "No user found with the provided Authorization header",
 		statusCode: 401,
+	},
+
+	// Storage errors
+	FILE_NOT_FOUND: {
+		message: "File not found",
+		statusCode: 404,
+	},
+	UNSUPPORTED_FILE_TYPE: {
+		message: "Unsupported file type",
+		statusCode: 400,
 	},
 };
 

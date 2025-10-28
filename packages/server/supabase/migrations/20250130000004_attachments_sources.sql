@@ -6,11 +6,12 @@ create table public.file (
   id                    uuid        primary key default gen_random_uuid(),
   record_id             uuid        not null
                         references public.record(id) on delete cascade,
-  file_kind             text        not null,
+  mime_type             text        not null,
   file_size             bigint      not null,
   storage_path          text        not null,
-  extracted_content     text,
-  extracted_content_tsv tsvector,
+  parser                text,
+  extracted_text        text,
+  extracted_text_tsv    tsvector,
   created_at            timestamptz not null default now()
 );
 
@@ -34,7 +35,7 @@ create index if not exists idx_file_record_id
   on public.file (record_id);
 
 create index if not exists idx_file_text_tsv
-  on public.file using GIN (extracted_content_tsv);
+  on public.file using GIN (extracted_text_tsv);
 
 create index if not exists idx_website_record_id
   on public.website (record_id);
@@ -50,7 +51,7 @@ security definer
 set search_path = ''
 as $$
 begin
-  NEW.extracted_content_tsv := to_tsvector('english', extensions.unaccent(COALESCE(NEW.extracted_content, '')));
+  NEW.extracted_text_tsv := to_tsvector('english', extensions.unaccent(COALESCE(NEW.extracted_text, '')));
   return NEW;
 end;
 $$;

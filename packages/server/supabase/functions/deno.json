@@ -3,7 +3,9 @@
 		"@m/shared": "../../../shared/src/index-deno.ts",
 		"~/library": "./_library/index.ts",
 		"@supabase/functions-js": "jsr:@supabase/functions-js@2/edge-runtime.d.ts",
-		"@supabase/supabase-js": "jsr:@supabase/supabase-js@2.50.0"
+		"@supabase/supabase-js": "jsr:@supabase/supabase-js@2.50.0",
+		"jsr:@std/csv@^1": "jsr:@std/csv@^1",
+		"openai": "npm:openai@^4"
 	},
 	"fmt": {
 		"semiColons": true,

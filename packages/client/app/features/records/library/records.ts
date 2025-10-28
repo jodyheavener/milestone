@@ -25,6 +25,12 @@ export interface CreateRecordData {
 		type: "file" | "website";
 		file?: File;
 		websiteUrl?: string;
+		parsedData?: {
+			extractedText: string;
+			summary: string;
+			parser: string;
+			storagePath?: string;
+		};
 	};
 }
 
@@ -73,29 +79,36 @@ export async function createRecord(
 	// Handle attachment if provided
 	if (data.attachment) {
 		if (data.attachment.type === "file" && data.attachment.file) {
-			// Create file attachment record first (with placeholder storage path)
-			const fileName = `${record.id}/${data.attachment.file.name}`;
+			// Get the storage path from parsed data (file was already uploaded)
+			const storagePath =
+				data.attachment.parsedData?.storagePath ||
+				`${record.id}/${data.attachment.file.name}`;
+
+			// Create file attachment record with parsed data
 			const { error: fileError } = await supabase.from("file").insert({
 				record_id: record.id,
-				file_kind: data.attachment.file.type || "unknown",
+				mime_type: data.attachment.file.type || "unknown",
 				file_size: data.attachment.file.size,
-				storage_path: fileName,
-				extracted_content: "", // Empty as requested
+				storage_path: storagePath,
+				parser: data.attachment.parsedData?.parser || null,
+				extracted_text: data.attachment.parsedData?.extractedText || null,
 			});
 
 			if (fileError) {
 				throw fileError;
 			}
 
-			// Then upload file to Supabase Storage
-			const { error: uploadError } = await supabase.storage
-				.from("attachments")
-				.upload(fileName, data.attachment.file);
+			// If file wasn't uploaded yet, upload it now
+			if (!data.attachment.parsedData?.storagePath) {
+				const { error: uploadError } = await supabase.storage
+					.from("attachments")
+					.upload(storagePath, data.attachment.file);
 
-			if (uploadError) {
-				// If upload fails, clean up the database record
-				await supabase.from("file").delete().eq("record_id", record.id);
-				throw uploadError;
+				if (uploadError) {
+					// If upload fails, clean up the database record
+					await supabase.from("file").delete().eq("record_id", record.id);
+					throw uploadError;
+				}
 			}
 		} else if (
 			data.attachment.type === "website" &&

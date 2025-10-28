@@ -10,8 +10,9 @@ import { createPageTitle } from "~/library/utilities";
 import { AuthContext } from "~/library/supabase/auth";
 import { createRecord } from "~/features/records";
 import { getProjects } from "~/features/projects";
-import { ProjectSelector, AttachmentSelector } from "~/features/records";
+import { ProjectSelector } from "~/features/records";
 import { cn } from "~/library/utilities";
+import { makeBrowserClient } from "~/library/supabase/clients";
 import type { Route } from "./+types/new";
 
 export async function loader({ context }: Route.LoaderArgs) {
@@ -33,6 +34,7 @@ export async function action({ request, context }: Route.ActionArgs) {
 	const attachmentType = formData.get("attachmentType") as string;
 	const attachmentFile = formData.get("attachmentFile") as File | null;
 	const attachmentWebsiteUrl = formData.get("attachmentWebsiteUrl") as string;
+	const parsedFileData = formData.get("parsedFileData") as string;
 
 	if (!content) {
 		return {
@@ -46,6 +48,7 @@ export async function action({ request, context }: Route.ActionArgs) {
 					type: attachmentType as "file" | "website",
 					file: attachmentFile || undefined,
 					websiteUrl: attachmentWebsiteUrl || undefined,
+					parsedData: parsedFileData ? JSON.parse(parsedFileData) : undefined,
 				}
 			: undefined;
 
@@ -80,6 +83,7 @@ export default function Component({
 	actionData,
 }: Route.ComponentProps) {
 	const { projects } = loaderData;
+	const supabase = makeBrowserClient();
 	const navigation = useNavigation();
 	const isSubmitting = navigation.state === "submitting";
 	const [searchParams] = useSearchParams();
@@ -93,11 +97,98 @@ export default function Component({
 	const [selectedProjectIds, setSelectedProjectIds] =
 		useState<string[]>(initialProjectIds);
 
-	const [attachment, setAttachment] = useState<{
-		type: "file" | "website";
-		file?: File;
-		websiteUrl?: string;
+	// New state for record creation method
+	const [creationMethod, setCreationMethod] = useState<
+		"file" | "website" | "manual" | null
+	>(null);
+	const [content, setContent] = useState("");
+	const [websiteUrl, setWebsiteUrl] = useState("");
+	const [uploadedFile, setUploadedFile] = useState<{
+		file: File;
+		storagePath: string;
+		parsedData: {
+			extractedText: string;
+			summary: string;
+			parser: string;
+			storagePath?: string;
+		};
 	} | null>(null);
+	const [isParsing, setIsParsing] = useState(false);
+
+	const handleFileUpload = async (file: File) => {
+		setIsParsing(true);
+		try {
+			// Get current user
+			const {
+				data: { user },
+			} = await supabase.auth.getUser();
+			if (!user) {
+				throw new Error("User not authenticated");
+			}
+
+			// Upload file to storage with user-scoped path
+			const fileName = `${Date.now()}-${file.name}`;
+			const storagePath = `${user.id}/${fileName}`;
+
+			const { data: uploadData, error: uploadError } = await supabase.storage
+				.from("attachments")
+				.upload(storagePath, file);
+
+			if (uploadError) {
+				throw uploadError;
+			}
+
+			// Get session for authorization
+			const {
+				data: { session },
+			} = await supabase.auth.getSession();
+			if (!session) {
+				throw new Error("No active session");
+			}
+
+			// Call parse-file function
+			const { data: parseData, error: parseError } =
+				await supabase.functions.invoke("parse-file", {
+					body: { storagePath: uploadData.path },
+					headers: {
+						Authorization: `Bearer ${session.access_token}`,
+					},
+				});
+
+			if (parseError) {
+				throw parseError;
+			}
+
+			setUploadedFile({
+				file,
+				storagePath: uploadData.path,
+				parsedData: {
+					...parseData,
+					storagePath: uploadData.path,
+				},
+			});
+
+			// Set content to the summary
+			setContent(parseData.summary);
+		} catch (error) {
+			console.error("File upload/parsing error:", error);
+			alert("Failed to upload and parse file. Please try again.");
+		} finally {
+			setIsParsing(false);
+		}
+	};
+
+	const removeUploadedFile = async () => {
+		if (uploadedFile) {
+			// Delete from storage
+			await supabase.storage
+				.from("attachments")
+				.remove([uploadedFile.storagePath]);
+
+			setUploadedFile(null);
+			setContent("");
+		}
+	};
 
 	return (
 		<div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
@@ -116,30 +207,186 @@ export default function Component({
 						</div>
 					)}
 
-					<div className="space-y-2">
-						<label
-							htmlFor="content"
-							className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-						>
-							Content
-						</label>
-						<textarea
-							id="content"
-							name="content"
-							required
-							rows={8}
-							className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[120px] resize-none"
-							placeholder="Enter your record content here..."
-						/>
-					</div>
+					{/* Record Creation Method Selection */}
+					{!creationMethod && (
+						<div className="space-y-3">
+							<label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+								How would you like to create this record?
+							</label>
+							<div className="grid grid-cols-1 gap-3">
+								<button
+									type="button"
+									onClick={() => setCreationMethod("file")}
+									className={cn(
+										"p-4 text-left rounded-lg border border-border bg-card hover:bg-accent transition-colors"
+									)}
+								>
+									<div className="font-medium">📎 Upload File</div>
+									<div className="text-sm text-muted-foreground mt-1">
+										Upload a PDF, image, or CSV file and we'll extract and
+										summarize the content
+									</div>
+								</button>
+								<button
+									type="button"
+									onClick={() => setCreationMethod("website")}
+									className={cn(
+										"p-4 text-left rounded-lg border border-border bg-card hover:bg-accent transition-colors"
+									)}
+								>
+									<div className="font-medium">🌐 Website Reference</div>
+									<div className="text-sm text-muted-foreground mt-1">
+										Add a website URL as a reference to your record
+									</div>
+								</button>
+								<button
+									type="button"
+									onClick={() => setCreationMethod("manual")}
+									className={cn(
+										"p-4 text-left rounded-lg border border-border bg-card hover:bg-accent transition-colors"
+									)}
+								>
+									<div className="font-medium">✍️ Manual Entry</div>
+									<div className="text-sm text-muted-foreground mt-1">
+										Write your record content manually
+									</div>
+								</button>
+							</div>
+						</div>
+					)}
+
+					{/* File Upload Section */}
+					{creationMethod === "file" && (
+						<div className="space-y-3">
+							<div className="flex items-center justify-between">
+								<label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+									File Upload
+								</label>
+								<button
+									type="button"
+									onClick={() => setCreationMethod(null)}
+									className="text-sm text-muted-foreground hover:text-foreground"
+								>
+									Change Method
+								</button>
+							</div>
+
+							{!uploadedFile ? (
+								<div className="space-y-2">
+									<input
+										type="file"
+										accept=".pdf,.csv,.jpg,.jpeg,.png,.gif,.webp"
+										onChange={(e) => {
+											const file = e.target.files?.[0];
+											if (file) {
+												handleFileUpload(file);
+											}
+										}}
+										disabled={isParsing}
+										className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-secondary file:text-secondary-foreground hover:file:bg-secondary/80"
+									/>
+									{isParsing && (
+										<div className="text-sm text-muted-foreground">
+											Uploading and parsing file...
+										</div>
+									)}
+								</div>
+							) : (
+								<div className="p-4 border border-border rounded-lg bg-card">
+									<div className="flex items-center justify-between">
+										<div>
+											<div className="font-medium">
+												{uploadedFile.file.name}
+											</div>
+											<div className="text-sm text-muted-foreground">
+												Parsed with {uploadedFile.parsedData.parser}
+											</div>
+										</div>
+										<button
+											type="button"
+											onClick={removeUploadedFile}
+											className="text-sm text-muted-foreground hover:text-foreground"
+										>
+											Remove
+										</button>
+									</div>
+								</div>
+							)}
+						</div>
+					)}
+
+					{/* Website URL Section */}
+					{creationMethod === "website" && (
+						<div className="space-y-3">
+							<div className="flex items-center justify-between">
+								<label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+									Website URL
+								</label>
+								<button
+									type="button"
+									onClick={() => setCreationMethod(null)}
+									className="text-sm text-muted-foreground hover:text-foreground"
+								>
+									Change Method
+								</button>
+							</div>
+							<input
+								type="url"
+								value={websiteUrl}
+								onChange={(e) => setWebsiteUrl(e.target.value)}
+								placeholder="https://example.com"
+								className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+							/>
+						</div>
+					)}
+
+					{/* Manual Entry Section */}
+					{creationMethod === "manual" && (
+						<div className="space-y-3">
+							<div className="flex items-center justify-between">
+								<label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+									Manual Entry
+								</label>
+								<button
+									type="button"
+									onClick={() => setCreationMethod(null)}
+									className="text-sm text-muted-foreground hover:text-foreground"
+								>
+									Change Method
+								</button>
+							</div>
+						</div>
+					)}
+
+					{/* Content Text Area - Show for all methods */}
+					{(creationMethod === "file" && uploadedFile) ||
+					creationMethod === "website" ||
+					creationMethod === "manual" ? (
+						<div className="space-y-2">
+							<label
+								htmlFor="content"
+								className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+							>
+								Content
+							</label>
+							<textarea
+								id="content"
+								name="content"
+								required
+								rows={8}
+								value={content}
+								onChange={(e) => setContent(e.target.value)}
+								className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[120px] resize-none"
+								placeholder="Enter your record content here..."
+							/>
+						</div>
+					) : null}
 
 					<ProjectSelector
 						projects={projects}
 						selectedProjectIds={selectedProjectIds}
 						onSelectionChange={setSelectedProjectIds}
 					/>
-
-					<AttachmentSelector onAttachmentChange={setAttachment} />
 
 					{/* Hidden inputs for selected project IDs */}
 					{selectedProjectIds.map((projectId) => (
@@ -152,44 +399,63 @@ export default function Component({
 					))}
 
 					{/* Hidden inputs for attachment data */}
-					{attachment && (
+					{creationMethod && (
 						<>
 							<input
 								type="hidden"
 								name="attachmentType"
-								value={attachment.type}
+								value={creationMethod === "manual" ? "" : creationMethod}
 							/>
-							{attachment.type === "website" && attachment.websiteUrl && (
+							{creationMethod === "website" && websiteUrl && (
 								<input
 									type="hidden"
 									name="attachmentWebsiteUrl"
-									value={attachment.websiteUrl}
+									value={websiteUrl}
 								/>
+							)}
+							{creationMethod === "file" && uploadedFile && (
+								<>
+									<input
+										type="hidden"
+										name="attachmentFile"
+										value={uploadedFile.file.name}
+									/>
+									<input
+										type="hidden"
+										name="parsedFileData"
+										value={JSON.stringify(uploadedFile.parsedData)}
+									/>
+								</>
 							)}
 						</>
 					)}
 
-					<div className="flex gap-4">
-						<button
-							type="submit"
-							disabled={isSubmitting}
-							className={cn(
-								"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-								"h-10 px-4 py-2 flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
-							)}
-						>
-							{isSubmitting ? "Creating..." : "Create Record"}
-						</button>
-						<Link
-							to="/records"
-							className={cn(
-								"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-								"h-10 px-4 py-2 bg-secondary text-secondary-foreground hover:bg-secondary/80"
-							)}
-						>
-							Cancel
-						</Link>
-					</div>
+					{/* Submit Button - Show when content is ready */}
+					{(creationMethod === "file" && uploadedFile) ||
+					creationMethod === "website" ||
+					creationMethod === "manual" ? (
+						<div className="flex gap-4">
+							<button
+								type="submit"
+								disabled={isSubmitting || !content.trim()}
+								className={cn(
+									"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+									"h-10 px-4 py-2 flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+								)}
+							>
+								{isSubmitting ? "Creating..." : "Create Record"}
+							</button>
+							<Link
+								to="/records"
+								className={cn(
+									"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+									"h-10 px-4 py-2 bg-secondary text-secondary-foreground hover:bg-secondary/80"
+								)}
+							>
+								Cancel
+							</Link>
+						</div>
+					) : null}
 				</Form>
 			</div>
 		</div>
