@@ -440,6 +440,41 @@ export type Database = {
 					},
 				];
 			};
+			task: {
+				Row: {
+					completed_at: string | null;
+					created_at: string;
+					description: string;
+					id: string;
+					project_id: string;
+					updated_at: string;
+				};
+				Insert: {
+					completed_at?: string | null;
+					created_at?: string;
+					description: string;
+					id?: string;
+					project_id: string;
+					updated_at?: string;
+				};
+				Update: {
+					completed_at?: string | null;
+					created_at?: string;
+					description?: string;
+					id?: string;
+					project_id?: string;
+					updated_at?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: "task_project_id_fkey";
+						columns: ["project_id"];
+						isOneToOne: false;
+						referencedRelation: "project";
+						referencedColumns: ["id"];
+					},
+				];
+			};
 			website: {
 				Row: {
 					address: string;
