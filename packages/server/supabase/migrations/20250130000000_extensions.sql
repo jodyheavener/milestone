@@ -5,6 +5,7 @@ create schema if not exists extensions;
 create extension if not exists "vector" schema extensions;
 create extension if not exists "pg_trgm" schema extensions;
 create extension if not exists "unaccent" schema extensions;
+create extension if not exists "http" schema extensions;
 
 -- Grant usage on the extensions schema to authenticated users
 grant usage on schema extensions to authenticated;
