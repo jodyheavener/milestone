@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { Link } from "react-router";
 import { useAuth } from "~/features/authentication";
 import { cn } from "~/library/utilities";
 
@@ -17,7 +18,9 @@ export function UserInfo() {
 	return (
 		<div className="flex items-center gap-4">
 			<div className="flex flex-col">
-				<span className="text-sm font-medium">{user.name}</span>
+				<Link className="text-sm font-medium" to="/account/profile">
+					{user.name}
+				</Link>
 			</div>
 			<button
 				onClick={handleSignOut}
