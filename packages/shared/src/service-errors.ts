@@ -12,6 +12,14 @@ export const serviceErrors = {
 		message: "You are not authorized to perform this action",
 		statusCode: 401,
 	},
+	INVALID_REQUEST: {
+		message: "The request is invalid",
+		statusCode: 400,
+	},
+	NOT_FOUND: {
+		message: "The requested resource was not found",
+		statusCode: 404,
+	},
 
 	// Authentication errors
 	BAD_AUTH_HEADER: {

@@ -6,6 +6,7 @@
 		"@supabase/supabase-js": "jsr:@supabase/supabase-js@2.50.0",
 		"@std/csv": "jsr:@std/csv@^1",
 		"openai": "npm:openai@^4",
+		"stripe": "npm:stripe@^19",
 		"unpdf": "npm:unpdf@^1"
 	},
 	"fmt": {

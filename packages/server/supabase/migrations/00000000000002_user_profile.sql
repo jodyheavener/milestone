@@ -9,6 +9,7 @@ create table public.profile (
   employer_name         text,
   employer_description  text,
   employer_website      text,
+  flags                 text[]      not null default '{}',
   created_at            timestamptz not null default now(),
   updated_at            timestamptz not null default now()
 );
@@ -47,6 +48,7 @@ alter table public.profile enable row level security;
 
 -- Grant basic permissions
 grant select, insert, update, delete on public.profile to authenticated;
+grant select, insert, update on public.profile to service_role;
 
 -- Profile policies (users can only access their own data)
 create policy "Users can view their own profile"
@@ -57,7 +59,35 @@ create policy "Users can view their own profile"
 create policy "Users can update their own profile"
   on public.profile
   for update to authenticated
-  using ((select auth.uid()) = id);
+  using ((select auth.uid()) = id)
+  with check ((select auth.uid()) = id);
+
+-- Function: Prevent authenticated users from updating flags
+create or replace function public.prevent_flags_update()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  -- Only prevent update if flags are actually changing
+  if old.flags is distinct from new.flags then
+    -- If auth.uid() is set, it means this is an authenticated user request
+    -- Block flag updates from authenticated users
+    -- service_role connections typically have auth.uid() as null
+    if auth.uid() is not null then
+      raise exception 'flags can only be updated by service_role';
+    end if;
+  end if;
+  
+  return new;
+end;
+$$;
+
+-- Trigger: Prevent authenticated users from updating flags
+create trigger trg_profile_prevent_flags_update
+  before update on public.profile
+  for each row execute function public.prevent_flags_update();
 
 -- Function: Delete user account and all associated data
 create or replace function public.delete_user()

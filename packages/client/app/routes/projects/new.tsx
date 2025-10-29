@@ -2,14 +2,45 @@ import { Link, redirect, Form, useNavigation } from "react-router";
 import { createPageTitle } from "~/library/utilities";
 import { AuthContext } from "~/library/supabase/auth";
 import { createProject } from "~/features/projects";
+import { canCreateProject, getEntitlements } from "~/features/account-billing";
 import { cn } from "~/library/utilities";
 import type { Route } from "./+types/new";
+
+export async function loader({ context }: Route.LoaderArgs) {
+	const { supabase } = context.get(AuthContext);
+	const {
+		data: { user },
+	} = await supabase.auth.getUser();
+
+	if (!user) {
+		throw redirect("/login");
+	}
+
+	// Check if user can create a project
+	const canCreate = await canCreateProject(supabase);
+	const entitlements = await getEntitlements(supabase).catch(() => null);
+
+	return {
+		canCreate: canCreate.allowed,
+		reason: canCreate.reason,
+		entitlements,
+	};
+}
 
 export async function action({ request, context }: Route.ActionArgs) {
 	const { supabase, user } = context.get(AuthContext);
 
 	if (!user) {
 		return { error: "User not authenticated" };
+	}
+
+	// Double-check entitlement before creation
+	const canCreate = await canCreateProject(supabase);
+	if (!canCreate.allowed) {
+		return {
+			error:
+				canCreate.reason || "Project limit exceeded. Please upgrade your plan.",
+		};
 	}
 
 	const formData = await request.formData();
@@ -49,9 +80,15 @@ export function meta({}: Route.MetaArgs) {
 	];
 }
 
-export default function Component({ actionData }: Route.ComponentProps) {
+export default function Component({
+	actionData,
+	loaderData,
+}: Route.ComponentProps) {
 	const navigation = useNavigation();
 	const isSubmitting = navigation.state === "submitting";
+	const { canCreate, reason, entitlements } = loaderData;
+
+	const showUpsell = !canCreate;
 
 	return (
 		<div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
@@ -62,6 +99,26 @@ export default function Component({ actionData }: Route.ComponentProps) {
 						Create a new project to track your milestones
 					</p>
 				</div>
+
+				{showUpsell && (
+					<div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+						<p className="text-yellow-700 text-sm mb-3">
+							{reason || "You've reached your project limit."}
+						</p>
+						{entitlements && entitlements.projects_limit > 0 && (
+							<p className="text-sm text-muted-foreground mb-3">
+								Current: {entitlements.projects_limit} project
+								{entitlements.projects_limit !== 1 ? "s" : ""}
+							</p>
+						)}
+						<Link
+							to="/pricing"
+							className="inline-block px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 text-sm font-semibold"
+						>
+							Upgrade Plan
+						</Link>
+					</div>
+				)}
 
 				<Form method="post" className="space-y-4">
 					{actionData?.error && (
@@ -105,7 +162,7 @@ export default function Component({ actionData }: Route.ComponentProps) {
 					<div className="flex gap-4">
 						<button
 							type="submit"
-							disabled={isSubmitting}
+							disabled={isSubmitting || !canCreate}
 							className={cn(
 								"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
 								"h-10 px-4 py-2 flex-1 bg-primary text-primary-foreground hover:bg-primary/90"

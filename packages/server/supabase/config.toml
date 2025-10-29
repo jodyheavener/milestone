@@ -368,3 +368,39 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/deno.json"
 entrypoint = "./functions/file-cleanup/index.ts"
+
+[functions.billing-create-checkout]
+enabled = true
+verify_jwt = true
+import_map = "./functions/deno.json"
+entrypoint = "./functions/billing/create-checkout/index.ts"
+
+[functions.billing-create-portal]
+enabled = true
+verify_jwt = true
+import_map = "./functions/deno.json"
+entrypoint = "./functions/billing/create-portal/index.ts"
+
+[functions.billing-list-products]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/billing/list-products/index.ts"
+
+[functions.stripe-webhook]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/stripe/webhook/index.ts"
+
+[functions.stripe-sync-catalog]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/stripe/sync-catalog/index.ts"
+
+[functions.usage-authorize]
+enabled = true
+verify_jwt = true
+import_map = "./functions/deno.json"
+entrypoint = "./functions/usage/authorize/index.ts"

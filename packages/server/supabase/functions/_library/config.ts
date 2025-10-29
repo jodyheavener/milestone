@@ -14,3 +14,11 @@ export const pingKey = parseString(Deno.env.get("PING_KEY"));
 export const openai = {
 	apiKey: parseString(Deno.env.get("OPENAI_API_KEY")),
 };
+
+export const stripe = {
+	secretKey: parseString(Deno.env.get("STRIPE_SECRET_KEY")),
+	webhookSecret: parseString(Deno.env.get("STRIPE_WEBHOOK_SECRET")),
+	mode: parseString(Deno.env.get("STRIPE_MODE"), "test"),
+};
+
+export const appUrl = parseString(Deno.env.get("APP_URL"));

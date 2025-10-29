@@ -68,6 +68,13 @@ info: ## Display server information
 	@pnpm run info
 	$(call END_TASK,displaying server information)
 
+.PHONY: reset
+reset: ## Reset development server
+	$(call START_TASK,CYAN,🧹,Resetting development server)
+	@$(MAKE) db/reset && \
+	$(MAKE) stripe/reset
+	$(call END_TASK,resetting development server)
+
 .PHONY: db/reset
 db/reset: ## Reset development server database
 	$(call START_TASK,CYAN,🗑️,Resetting development server database)
@@ -75,6 +82,7 @@ db/reset: ## Reset development server database
 	if [ "$$confirm" = "Y" ]; then \
 		supabase db reset && \
 		$(MAKE) db/types && \
+		$(MAKE) functions/sync-catalog && \
 		echo "${GREEN}✅ Finished resetting database${RESET}"; \
 	else \
 		echo "${CYAN}ℹ️ Database reset cancelled${RESET}"; \
@@ -117,6 +125,28 @@ functions/new: ## Create a new Supabase function (Usage: make functions/new name
 functions/start: ## Start Supabase functions watcher
 	$(call START_TASK,CYAN,🔄,Starting Supabase functions watcher)
 	@supabase functions serve --no-verify-jwt
+
+.PHONY: functions/sync-catalog
+functions/sync-catalog: ## Sync Stripe catalog (products and prices)
+	$(call START_TASK,CYAN,🔄,Syncing Stripe catalog)
+	@curl -X POST http://127.0.0.1:54321/functions/v1/stripe-sync-catalog \
+		-H "Content-Type: application/json" \
+		-d '{}' || echo "${RED}Failed to sync catalog. Make sure Supabase is running.${RESET}"
+	$(call END_TASK,syncing Stripe catalog)
+
+.PHONY: functions/file-cleanup
+functions/file-cleanup: ## Run file cleanup job
+	$(call START_TASK,CYAN,🧹,Running file cleanup)
+	@curl -X POST http://127.0.0.1:54321/functions/v1/file-cleanup \
+		-H "Content-Type: application/json" \
+		-d '{}' || echo "${RED}Failed to run cleanup. Make sure Supabase is running.${RESET}"
+	$(call END_TASK,running file cleanup)
+
+.PHONY: stripe/reset
+stripe/reset: ## Reset Stripe test data for test@example.com
+	$(call START_TASK,CYAN,🧹,Resetting Stripe test data)
+	@./scripts/reset-seed-stripe.sh
+	$(call END_TASK,resetting Stripe test data)
 
 .PHONY: help
 help: ## Show help for server package

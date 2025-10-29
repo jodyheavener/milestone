@@ -9,6 +9,7 @@ import {
 const routes: RouteConfig = [
 	layout("./layouts/application.tsx", [
 		index("./routes/home.tsx"),
+		route("pricing", "./routes/pricing.tsx"),
 
 		layout("./layouts/unauthenticated.tsx", [
 			route("login", "./routes/authentication/login.tsx"),
@@ -41,6 +42,7 @@ const routes: RouteConfig = [
 		...prefix("account", [
 			index("./routes/account/account.tsx"),
 			route("profile", "./routes/account/profile.tsx"),
+			route("billing", "./routes/account/billing.tsx"),
 			route("delete", "./routes/account/delete.tsx"),
 		]),
 	]),
