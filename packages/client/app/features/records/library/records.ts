@@ -25,6 +25,10 @@ export interface CreateRecordData {
 		type: "file" | "website";
 		file?: File;
 		websiteUrl?: string;
+		websiteData?: {
+			pageTitle: string;
+			extractedContent: string;
+		};
 		parsedData?: {
 			extractedText: string;
 			summary: string;
@@ -129,12 +133,12 @@ export async function createRecord(
 			data.attachment.type === "website" &&
 			data.attachment.websiteUrl
 		) {
-			// Create website attachment record with placeholder data
+			// Create website attachment record with scanned data
 			const { error: websiteError } = await supabase.from("website").insert({
 				record_id: record.id,
 				address: data.attachment.websiteUrl,
-				page_title: "Foo", // As requested
-				extracted_content: "", // Empty as requested
+				page_title: data.attachment.websiteData?.pageTitle || "Untitled",
+				extracted_content: data.attachment.websiteData?.extractedContent || "",
 			});
 
 			if (websiteError) {

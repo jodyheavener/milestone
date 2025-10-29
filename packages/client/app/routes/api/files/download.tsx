@@ -35,7 +35,7 @@ export async function loader({ context, params }: Route.LoaderArgs) {
 	const arrayBuffer = await fileData.arrayBuffer();
 
 	// Determine content type based on file kind
-	const contentType = file.file_kind || "application/octet-stream";
+	const contentType = file.mime_type || "application/octet-stream";
 
 	// Extract filename from storage path
 	const filename = file.storage_path.split("/").pop() || "download";

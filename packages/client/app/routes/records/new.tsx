@@ -34,6 +34,10 @@ export async function action({ request, context }: Route.ActionArgs) {
 	const attachmentType = formData.get("attachmentType") as string;
 	const attachmentFile = formData.get("attachmentFile") as File | null;
 	const attachmentWebsiteUrl = formData.get("attachmentWebsiteUrl") as string;
+	const websitePageTitle = formData.get("websitePageTitle") as string;
+	const websiteExtractedContent = formData.get(
+		"websiteExtractedContent"
+	) as string;
 	const parsedFileData = formData.get("parsedFileData") as string;
 	const fileSize = formData.get("fileSize") as string;
 	const fileName = formData.get("fileName") as string;
@@ -51,6 +55,13 @@ export async function action({ request, context }: Route.ActionArgs) {
 					type: attachmentType as "file" | "website",
 					file: attachmentFile || undefined,
 					websiteUrl: attachmentWebsiteUrl || undefined,
+					websiteData:
+						attachmentType === "website"
+							? {
+									pageTitle: websitePageTitle,
+									extractedContent: websiteExtractedContent,
+								}
+							: undefined,
 					parsedData: parsedFileData ? JSON.parse(parsedFileData) : undefined,
 					fileMetadata:
 						attachmentType === "file"
@@ -115,6 +126,12 @@ export default function Component({
 	>(null);
 	const [content, setContent] = useState("");
 	const [websiteUrl, setWebsiteUrl] = useState("");
+	const [scannedWebsite, setScannedWebsite] = useState<{
+		url: string;
+		pageTitle: string;
+		extractedContent: string;
+		summary: string;
+	} | null>(null);
 	const [uploadedFile, setUploadedFile] = useState<{
 		file: File;
 		storagePath: string;
@@ -126,6 +143,7 @@ export default function Component({
 		};
 	} | null>(null);
 	const [isParsing, setIsParsing] = useState(false);
+	const [isScanningWebsite, setIsScanningWebsite] = useState(false);
 
 	const handleFileUpload = async (file: File) => {
 		setIsParsing(true);
@@ -200,6 +218,57 @@ export default function Component({
 			setUploadedFile(null);
 			setContent("");
 		}
+	};
+
+	const handleWebsiteScan = async () => {
+		if (!websiteUrl.trim()) {
+			alert("Please enter a website URL");
+			return;
+		}
+
+		setIsScanningWebsite(true);
+		try {
+			// Get session for authorization
+			const {
+				data: { session },
+			} = await supabase.auth.getSession();
+			if (!session) {
+				throw new Error("No active session");
+			}
+
+			// Call parse-website function
+			const { data: scanData, error: scanError } =
+				await supabase.functions.invoke("parse-website", {
+					body: { url: websiteUrl.trim() },
+					headers: {
+						Authorization: `Bearer ${session.access_token}`,
+					},
+				});
+
+			if (scanError) {
+				throw scanError;
+			}
+
+			setScannedWebsite({
+				url: websiteUrl.trim(),
+				pageTitle: scanData.pageTitle,
+				extractedContent: scanData.extractedContent,
+				summary: scanData.summary,
+			});
+
+			// Set content to the summary
+			setContent(scanData.summary);
+		} catch (error) {
+			console.error("Website scanning error:", error);
+			alert("Failed to scan website. Please try again.");
+		} finally {
+			setIsScanningWebsite(false);
+		}
+	};
+
+	const removeScannedWebsite = () => {
+		setScannedWebsite(null);
+		setContent("");
 	};
 
 	return (
@@ -342,13 +411,55 @@ export default function Component({
 									Change Method
 								</button>
 							</div>
-							<input
-								type="url"
-								value={websiteUrl}
-								onChange={(e) => setWebsiteUrl(e.target.value)}
-								placeholder="https://example.com"
-								className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-							/>
+
+							{!scannedWebsite ? (
+								<div className="space-y-2">
+									<input
+										type="url"
+										value={websiteUrl}
+										onChange={(e) => setWebsiteUrl(e.target.value)}
+										placeholder="https://example.com"
+										disabled={isScanningWebsite}
+										className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+									/>
+									<button
+										type="button"
+										onClick={handleWebsiteScan}
+										disabled={isScanningWebsite || !websiteUrl.trim()}
+										className={cn(
+											"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+											"h-10 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90"
+										)}
+									>
+										{isScanningWebsite ? "Scanning..." : "Scan Website"}
+									</button>
+									{isScanningWebsite && (
+										<div className="text-sm text-muted-foreground">
+											Scanning website content...
+										</div>
+									)}
+								</div>
+							) : (
+								<div className="p-4 border border-border rounded-lg bg-card">
+									<div className="flex items-center justify-between">
+										<div>
+											<div className="font-medium">
+												{scannedWebsite.pageTitle}
+											</div>
+											<div className="text-sm text-muted-foreground">
+												{scannedWebsite.url}
+											</div>
+										</div>
+										<button
+											type="button"
+											onClick={removeScannedWebsite}
+											className="text-sm text-muted-foreground hover:text-foreground"
+										>
+											Remove
+										</button>
+									</div>
+								</div>
+							)}
 						</div>
 					)}
 
@@ -372,7 +483,7 @@ export default function Component({
 
 					{/* Content Text Area - Show for all methods */}
 					{(creationMethod === "file" && uploadedFile) ||
-					creationMethod === "website" ||
+					(creationMethod === "website" && scannedWebsite) ||
 					creationMethod === "manual" ? (
 						<div className="space-y-2">
 							<label
@@ -418,12 +529,24 @@ export default function Component({
 								name="attachmentType"
 								value={creationMethod === "manual" ? "" : creationMethod}
 							/>
-							{creationMethod === "website" && websiteUrl && (
-								<input
-									type="hidden"
-									name="attachmentWebsiteUrl"
-									value={websiteUrl}
-								/>
+							{creationMethod === "website" && scannedWebsite && (
+								<>
+									<input
+										type="hidden"
+										name="attachmentWebsiteUrl"
+										value={scannedWebsite.url}
+									/>
+									<input
+										type="hidden"
+										name="websitePageTitle"
+										value={scannedWebsite.pageTitle}
+									/>
+									<input
+										type="hidden"
+										name="websiteExtractedContent"
+										value={scannedWebsite.extractedContent}
+									/>
+								</>
 							)}
 							{creationMethod === "file" && uploadedFile && (
 								<>
@@ -459,7 +582,7 @@ export default function Component({
 
 					{/* Submit Button - Show when content is ready */}
 					{(creationMethod === "file" && uploadedFile) ||
-					creationMethod === "website" ||
+					(creationMethod === "website" && scannedWebsite) ||
 					creationMethod === "manual" ? (
 						<div className="flex gap-4">
 							<button

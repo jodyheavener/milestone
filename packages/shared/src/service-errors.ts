@@ -32,6 +32,16 @@ export const serviceErrors = {
 		message: "Unsupported file type",
 		statusCode: 400,
 	},
+
+	// Website parsing errors
+	INVALID_URL: {
+		message: "Invalid URL format",
+		statusCode: 400,
+	},
+	NO_CONTENT: {
+		message: "No content could be extracted from the website",
+		statusCode: 400,
+	},
 };
 
 export type ServiceErrorType = keyof typeof serviceErrors;

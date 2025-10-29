@@ -139,7 +139,7 @@ export default function Component({
 													File Attachment
 												</div>
 												<div className="text-xs text-muted-foreground">
-													{record.file.file_kind} •{" "}
+													{record.file.mime_type} •{" "}
 													{formatFileSize(record.file.file_size)}
 												</div>
 											</div>
