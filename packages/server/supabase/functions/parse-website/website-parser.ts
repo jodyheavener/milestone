@@ -84,7 +84,7 @@ export async function extractPage(url: string): Promise<PageData> {
  * Fetches HTML content from a URL with appropriate headers
  */
 async function fetchHtml(
-	url: string
+	url: string,
 ): Promise<{ html: string; lastModified: string | null }> {
 	const response: Response = await fetch(url, {
 		method: "GET",

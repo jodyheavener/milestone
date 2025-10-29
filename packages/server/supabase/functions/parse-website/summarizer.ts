@@ -8,16 +8,16 @@ import { openaiClient } from "~/library";
  */
 export async function generateWebsiteSummary(
 	content: string,
-	pageTitle?: string
+	pageTitle?: string,
 ): Promise<string> {
 	const maxInputLength = 80000; // Cap at ~80k chars
-	const truncatedContent =
-		content.length > maxInputLength
-			? content.substring(0, maxInputLength) + "..."
-			: content;
+	const truncatedContent = content.length > maxInputLength
+		? content.substring(0, maxInputLength) + "..."
+		: content;
 
 	try {
-		const systemPrompt = `You are a helpful assistant that analyzes and summarizes web page content. Your task is to create a concise, informative summary that captures the key information, main topics, and important details from the webpage content. Focus on:
+		const systemPrompt =
+			`You are a helpful assistant that analyzes and summarizes web page content. Your task is to create a concise, informative summary that captures the key information, main topics, and important details from the webpage content. Focus on:
 
 1. Main topics and themes
 2. Key information and facts

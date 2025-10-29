@@ -54,7 +54,7 @@ serveFunction<["url"]>(
 			// Generate summary using OpenAI
 			const summary = await generateWebsiteSummary(
 				pageData.content,
-				pageData.title
+				pageData.title,
 			);
 
 			const response: ParseWebsiteResponse = {
@@ -74,5 +74,5 @@ serveFunction<["url"]>(
 				debugInfo: error instanceof Error ? error.message : "Unknown error",
 			});
 		}
-	}
+	},
 );

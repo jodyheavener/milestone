@@ -3,21 +3,23 @@ import { createPageTitle } from "~/library/utilities";
 import { AuthContext } from "~/library/supabase/auth";
 import { getProject, deleteProject } from "~/features/projects";
 import { getRecordsForProject } from "~/features/records";
+import { getTasksForProject, TaskList } from "~/features/tasks";
 import { cn } from "~/library/utilities";
 import type { Route } from "./+types/view";
 
 export async function loader({ context, params }: Route.LoaderArgs) {
 	const { supabase } = context.get(AuthContext);
-	const [project, records] = await Promise.all([
+	const [project, records, tasks] = await Promise.all([
 		getProject(supabase, params.id),
 		getRecordsForProject(supabase, params.id),
+		getTasksForProject(supabase, params.id),
 	]);
 
 	if (!project) {
 		throw redirect("/projects");
 	}
 
-	return { project, records };
+	return { project, records, tasks };
 }
 
 export async function action({ request, params, context }: Route.ActionArgs) {
@@ -40,7 +42,7 @@ export function meta({ loaderData }: Route.MetaArgs) {
 }
 
 export default function Component({ loaderData }: Route.ComponentProps) {
-	const { project, records } = loaderData;
+	const { project, records, tasks } = loaderData;
 
 	return (
 		<div className="p-8">
@@ -91,6 +93,23 @@ export default function Component({ loaderData }: Route.ComponentProps) {
 					<div className="text-muted-foreground whitespace-pre-wrap">
 						{project.goal}
 					</div>
+				</div>
+
+				<div className="space-y-6">
+					<div className="flex items-center justify-between">
+						<h2 className="text-xl font-semibold">Tasks</h2>
+						<Link
+							to={`/tasks/new?project=${project.id}`}
+							className={cn(
+								"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+								"h-9 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90"
+							)}
+						>
+							+ New Task
+						</Link>
+					</div>
+
+					<TaskList tasks={tasks} projectId={project.id} />
 				</div>
 
 				<div className="space-y-6">
