@@ -60,7 +60,11 @@ schema_paths = []
 enabled = true
 # Specifies an ordered list of seed files to load during db reset.
 # Supports glob patterns relative to supabase directory: "./seeds/*.sql"
-sql_paths = ["./seed.sql"]
+sql_paths = [
+  "./seeds/user.sql",
+  "./seeds/profile.sql",
+  "./seeds/project.sql"
+]
 
 [db.network_restrictions]
 # Enable management of network restrictions.
@@ -359,8 +363,8 @@ entrypoint = "./functions/health/index.ts"
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/health/*.html" ]
 
-[functions.cleanup-orphaned-files]
+[functions.file-cleanup]
 enabled = true
 verify_jwt = false
 import_map = "./functions/deno.json"
-entrypoint = "./functions/cleanup-orphaned-files/index.ts"
+entrypoint = "./functions/file-cleanup/index.ts"

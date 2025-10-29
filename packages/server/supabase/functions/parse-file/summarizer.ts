@@ -8,13 +8,12 @@ import { openaiClient } from "~/library";
  */
 export async function generateSummary(
 	text: string,
-	mimeType: string
+	mimeType: string,
 ): Promise<string> {
 	const maxInputLength = 80000; // Cap at ~80k chars
-	const truncatedText =
-		text.length > maxInputLength
-			? text.substring(0, maxInputLength) + "..."
-			: text;
+	const truncatedText = text.length > maxInputLength
+		? text.substring(0, maxInputLength) + "..."
+		: text;
 
 	try {
 		const response = await openaiClient.responses.create({
@@ -25,7 +24,8 @@ export async function generateSummary(
 					role: "system",
 				},
 				{
-					content: `Please summarize the following text extracted from a ${mimeType} file:\n\n${truncatedText}`,
+					content:
+						`Please summarize the following text extracted from a ${mimeType} file:\n\n${truncatedText}`,
 					role: "user",
 				},
 			],

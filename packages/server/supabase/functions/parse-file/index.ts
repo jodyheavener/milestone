@@ -6,10 +6,6 @@ import { extractTextFromImage } from "./image-parser.ts";
 import { extractTextFromCSV } from "./csv-parser.ts";
 import { generateSummary } from "./summarizer.ts";
 
-interface ParseFileRequest {
-	storagePath: string;
-}
-
 interface ParseFileResponse {
 	extractedText: string;
 	summary: string;
@@ -17,7 +13,7 @@ interface ParseFileResponse {
 	date?: string | null;
 }
 
-serveFunction(
+serveFunction<["storagePath"]>(
 	{
 		methods: ["POST"],
 		setCors: true,
@@ -25,7 +21,7 @@ serveFunction(
 		args: ["storagePath"] as const,
 	},
 	async ({ args, user, respond }) => {
-		const { storagePath } = args as ParseFileRequest;
+		const { storagePath } = args as { storagePath: string };
 
 		if (!user) {
 			throw new ServiceError("UNAUTHORIZED");
@@ -40,8 +36,8 @@ serveFunction(
 
 		try {
 			// Download file from storage
-			const { data: fileData, error: downloadError } =
-				await supabaseClient.storage.from("attachments").download(storagePath);
+			const { data: fileData, error: downloadError } = await supabaseClient
+				.storage.from("attachments").download(storagePath);
 
 			if (downloadError) {
 				throw new ServiceError("FILE_NOT_FOUND", {
@@ -59,8 +55,8 @@ serveFunction(
 					search: storagePath.split("/").pop(),
 				});
 
-			const mimeType =
-				fileInfo?.[0]?.metadata?.mimetype || "application/octet-stream";
+			const mimeType = fileInfo?.[0]?.metadata?.mimetype ||
+				"application/octet-stream";
 
 			// Extract text based on mime type
 			let extractedText = "";
@@ -105,5 +101,5 @@ serveFunction(
 				debugInfo: error instanceof Error ? error.message : "Unknown error",
 			});
 		}
-	}
+	},
 );

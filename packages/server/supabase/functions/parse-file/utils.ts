@@ -23,8 +23,7 @@ export function normalizeText(text: string): string {
  * @returns Base64 encoded string
  */
 export function uint8ArrayToBase64(buffer: Uint8Array): string {
-	const binaryString = Array.from(buffer, (byte) =>
-		String.fromCharCode(byte)
-	).join("");
+	const binaryString = Array.from(buffer, (byte) => String.fromCharCode(byte))
+		.join("");
 	return btoa(binaryString);
 }

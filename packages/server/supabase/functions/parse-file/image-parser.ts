@@ -8,7 +8,7 @@ export interface ImageExtractionResult {
 
 export async function extractTextFromImage(
 	fileBuffer: Uint8Array,
-	mimeType: string
+	mimeType: string,
 ): Promise<ImageExtractionResult> {
 	try {
 		// Convert Uint8Array to base64 for OpenAI Vision API
@@ -21,7 +21,8 @@ export async function extractTextFromImage(
 					content: [
 						{
 							type: "input_text",
-							text: "Extract all visible text from this image. Do not infer or guess any information. If text is unreadable or unclear, use the token '[UNREADABLE]'. Return only the extracted text without any additional commentary or formatting.",
+							text:
+								"Extract all visible text from this image. Do not infer or guess any information. If text is unreadable or unclear, use the token '[UNREADABLE]'. Return only the extracted text without any additional commentary or formatting.",
 						},
 						{
 							type: "input_image",

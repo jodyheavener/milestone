@@ -1,8 +1,10 @@
+-- File Storage: storage bucket and policies for file attachments
+
 -- Create storage bucket for attachments
 insert into storage.buckets (id, name, public)
 values ('attachments', 'attachments', false);
 
--- Set up RLS policies for attachments bucket
+-- Storage policies for file attachments
 create policy "Users can upload attachments for their own records"
   on storage.objects
   for insert to authenticated

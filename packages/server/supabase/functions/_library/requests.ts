@@ -15,9 +15,9 @@ type ServeOptions<T extends readonly string[]> = {
 	args?: T;
 };
 
+// @todo - Can this be Record<string, string | number | boolean | null | undefined>?
 type ExtractArgs<T extends readonly string[]> = {
-	// deno-lint-ignore no-explicit-any
-	[K in T[number]]: any;
+	[K in T[number]]: string | number | boolean | null | undefined;
 };
 
 type RespondFunction = (

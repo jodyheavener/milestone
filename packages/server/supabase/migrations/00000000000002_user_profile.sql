@@ -13,9 +13,6 @@ create table public.profile (
   updated_at            timestamptz not null default now()
 );
 
--- Indexes: core entities
--- No additional indexes needed for employer fields
-
 -- Triggers: auto-update updated_at rows
 create trigger trg_profile_updated_at
   before update on public.profile

@@ -1,15 +1,4 @@
--- Projects & Records: project, record, record_project
--- Core business logic for milestone tracking
-
--- Table: project
-create table public.project (
-  id              uuid        primary key default gen_random_uuid(),
-  user_id         uuid        not null references auth.users(id) on delete cascade,
-  title           text        not null,
-  goal            text        not null,
-  created_at      timestamptz not null default now(),
-  updated_at      timestamptz not null default now()
-);
+-- Record: record table and related functionality
 
 -- Table: record
 create table public.record (
@@ -22,7 +11,7 @@ create table public.record (
   updated_at      timestamptz not null default now()
 );
 
--- Table: record_project (many-to-many join)
+-- Table: record_project
 create table public.record_project (
   record_id       uuid        not null
                   references public.record(id) on delete cascade,
@@ -33,20 +22,7 @@ create table public.record_project (
   primary key (record_id, project_id)
 );
 
--- Table: task
-create table public.task (
-  id              uuid        primary key default gen_random_uuid(),
-  project_id      uuid        not null references public.project(id) on delete cascade,
-  description     text        not null,
-  completed_at    timestamptz,
-  created_at      timestamptz not null default now(),
-  updated_at      timestamptz not null default now()
-);
-
--- Indexes: projects, records, and tasks
-create index if not exists idx_project_user_id
-  on public.project (user_id);
-
+-- Indexes: records
 create index if not exists idx_record_user_id
   on public.record (user_id);
 
@@ -59,23 +35,9 @@ create index if not exists idx_record_metadata_gin
 create index if not exists idx_recordproject_project_id
   on public.record_project (project_id);
 
-create index if not exists idx_task_project_id
-  on public.task (project_id);
-
-create index if not exists idx_task_completed_at
-  on public.task (completed_at);
-
 -- Triggers: auto-update updated_at rows
-create trigger trg_project_updated_at
-  before update on public.project
-  for each row execute procedure public.set_updated_at();
-
 create trigger trg_record_updated_at
   before update on public.record
-  for each row execute procedure public.set_updated_at();
-
-create trigger trg_task_updated_at
-  before update on public.task
   for each row execute procedure public.set_updated_at();
 
 -- Function: Update TSV for record content
@@ -97,37 +59,12 @@ create trigger trg_record_content_tsv
   for each row execute function public.update_record_content_tsv();
 
 -- Row-level security
-alter table public.project enable row level security;
 alter table public.record enable row level security;
 alter table public.record_project enable row level security;
-alter table public.task enable row level security;
 
 -- Grant basic permissions
-grant select, insert, update, delete on public.project to authenticated;
 grant select, insert, update, delete on public.record to authenticated;
 grant select, insert, update, delete on public.record_project to authenticated;
-grant select, insert, update, delete on public.task to authenticated;
-
--- Project policies (users can only access their own projects)
-create policy "Users can view their own projects"
-  on public.project
-  for select to authenticated
-  using ((select auth.uid()) = user_id);
-
-create policy "Users can create their own projects"
-  on public.project
-  for insert to authenticated
-  with check ((select auth.uid()) = user_id);
-
-create policy "Users can update their own projects"
-  on public.project
-  for update to authenticated
-  using ((select auth.uid()) = user_id);
-
-create policy "Users can delete their own projects"
-  on public.project
-  for delete to authenticated
-  using ((select auth.uid()) = user_id);
 
 -- Record policies (users can only access their own records)
 create policy "Users can view their own records"
@@ -190,46 +127,5 @@ create policy "Users can delete record-project links for their own data"
     exists (
       select 1 from public.project p 
       where p.id = record_project.project_id and p.user_id = (select auth.uid())
-    )
-  );
-
--- Task policies (users can only access tasks for their own projects)
-create policy "Users can view tasks for their own projects"
-  on public.task
-  for select to authenticated
-  using (
-    exists (
-      select 1 from public.project p 
-      where p.id = task.project_id and p.user_id = (select auth.uid())
-    )
-  );
-
-create policy "Users can create tasks for their own projects"
-  on public.task
-  for insert to authenticated
-  with check (
-    exists (
-      select 1 from public.project p 
-      where p.id = task.project_id and p.user_id = (select auth.uid())
-    )
-  );
-
-create policy "Users can update tasks for their own projects"
-  on public.task
-  for update to authenticated
-  using (
-    exists (
-      select 1 from public.project p 
-      where p.id = task.project_id and p.user_id = (select auth.uid())
-    )
-  );
-
-create policy "Users can delete tasks for their own projects"
-  on public.task
-  for delete to authenticated
-  using (
-    exists (
-      select 1 from public.project p 
-      where p.id = task.project_id and p.user_id = (select auth.uid())
     )
   );

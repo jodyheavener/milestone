@@ -7,7 +7,7 @@ import { normalizeText } from "./utils.ts";
  * @returns Extracted and normalized text
  */
 export async function extractTextFromPDF(
-	fileBuffer: Uint8Array
+	fileBuffer: Uint8Array,
 ): Promise<string> {
 	try {
 		// unpdf expects Uint8Array, no Buffer conversion needed
