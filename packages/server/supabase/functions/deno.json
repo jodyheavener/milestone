@@ -4,8 +4,9 @@
 		"~/library": "./_library/index.ts",
 		"@supabase/functions-js": "jsr:@supabase/functions-js@2/edge-runtime.d.ts",
 		"@supabase/supabase-js": "jsr:@supabase/supabase-js@2.50.0",
-		"jsr:@std/csv@^1": "jsr:@std/csv@^1",
-		"openai": "npm:openai@^4"
+		"@std/csv": "jsr:@std/csv@^1",
+		"openai": "npm:openai@^4",
+		"unpdf": "npm:unpdf@^1"
 	},
 	"fmt": {
 		"semiColons": true,
