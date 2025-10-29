@@ -35,6 +35,9 @@ export async function action({ request, context }: Route.ActionArgs) {
 	const attachmentFile = formData.get("attachmentFile") as File | null;
 	const attachmentWebsiteUrl = formData.get("attachmentWebsiteUrl") as string;
 	const parsedFileData = formData.get("parsedFileData") as string;
+	const fileSize = formData.get("fileSize") as string;
+	const fileName = formData.get("fileName") as string;
+	const fileType = formData.get("fileType") as string;
 
 	if (!content) {
 		return {
@@ -49,6 +52,14 @@ export async function action({ request, context }: Route.ActionArgs) {
 					file: attachmentFile || undefined,
 					websiteUrl: attachmentWebsiteUrl || undefined,
 					parsedData: parsedFileData ? JSON.parse(parsedFileData) : undefined,
+					fileMetadata:
+						attachmentType === "file"
+							? {
+									name: fileName,
+									size: fileSize ? parseInt(fileSize) : 0,
+									type: fileType,
+								}
+							: undefined,
 				}
 			: undefined;
 
@@ -60,6 +71,7 @@ export async function action({ request, context }: Route.ActionArgs) {
 
 		throw redirect("/records");
 	} catch (error) {
+		console.error("Error creating record:", error);
 		if (error instanceof Response) {
 			throw error;
 		}
@@ -424,6 +436,21 @@ export default function Component({
 										type="hidden"
 										name="parsedFileData"
 										value={JSON.stringify(uploadedFile.parsedData)}
+									/>
+									<input
+										type="hidden"
+										name="fileSize"
+										value={uploadedFile.file.size.toString()}
+									/>
+									<input
+										type="hidden"
+										name="fileName"
+										value={uploadedFile.file.name}
+									/>
+									<input
+										type="hidden"
+										name="fileType"
+										value={uploadedFile.file.type}
 									/>
 								</>
 							)}

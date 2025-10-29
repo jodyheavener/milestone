@@ -31,6 +31,11 @@ export interface CreateRecordData {
 			parser: string;
 			storagePath?: string;
 		};
+		fileMetadata?: {
+			name: string;
+			size: number;
+			type: string;
+		};
 	};
 }
 
@@ -78,17 +83,27 @@ export async function createRecord(
 
 	// Handle attachment if provided
 	if (data.attachment) {
-		if (data.attachment.type === "file" && data.attachment.file) {
+		if (
+			data.attachment.type === "file" &&
+			(data.attachment.file || data.attachment.fileMetadata)
+		) {
 			// Get the storage path from parsed data (file was already uploaded)
+			const fileName =
+				data.attachment.fileMetadata?.name ||
+				data.attachment.file?.name ||
+				"unknown";
 			const storagePath =
-				data.attachment.parsedData?.storagePath ||
-				`${record.id}/${data.attachment.file.name}`;
+				data.attachment.parsedData?.storagePath || `${record.id}/${fileName}`;
 
 			// Create file attachment record with parsed data
 			const { error: fileError } = await supabase.from("file").insert({
 				record_id: record.id,
-				mime_type: data.attachment.file.type || "unknown",
-				file_size: data.attachment.file.size,
+				mime_type:
+					data.attachment.fileMetadata?.type ||
+					data.attachment.file?.type ||
+					"unknown",
+				file_size:
+					data.attachment.fileMetadata?.size || data.attachment.file?.size || 0,
 				storage_path: storagePath,
 				parser: data.attachment.parsedData?.parser || null,
 				extracted_text: data.attachment.parsedData?.extractedText || null,
@@ -99,7 +114,7 @@ export async function createRecord(
 			}
 
 			// If file wasn't uploaded yet, upload it now
-			if (!data.attachment.parsedData?.storagePath) {
+			if (!data.attachment.parsedData?.storagePath && data.attachment.file) {
 				const { error: uploadError } = await supabase.storage
 					.from("attachments")
 					.upload(storagePath, data.attachment.file);
