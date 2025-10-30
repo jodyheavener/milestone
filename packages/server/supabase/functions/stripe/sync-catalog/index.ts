@@ -48,10 +48,9 @@ serveFunction(
 
 				products.push(...productList.data);
 				hasMore = productList.has_more;
-				startingAfter =
-					productList.data.length > 0
-						? productList.data[productList.data.length - 1].id
-						: undefined;
+				startingAfter = productList.data.length > 0
+					? productList.data[productList.data.length - 1].id
+					: undefined;
 			}
 
 			console.log(`Found ${products.length} products in Stripe`);
@@ -71,12 +70,12 @@ serveFunction(
 							},
 							{
 								onConflict: "stripe_product_id",
-							}
+							},
 						);
 
 					if (productError) {
 						errors.push(
-							`Failed to sync product ${product.id}: ${productError.message}`
+							`Failed to sync product ${product.id}: ${productError.message}`,
 						);
 						continue;
 					}
@@ -93,7 +92,7 @@ serveFunction(
 
 					if (dbProductError || !dbProduct) {
 						errors.push(
-							`Failed to find database product for ${product.id}: ${dbProductError?.message}`
+							`Failed to find database product for ${product.id}: ${dbProductError?.message}`,
 						);
 						continue;
 					}
@@ -113,10 +112,9 @@ serveFunction(
 
 						prices.push(...priceList.data);
 						hasMore = priceList.has_more;
-						startingAfter =
-							priceList.data.length > 0
-								? priceList.data[priceList.data.length - 1].id
-								: undefined;
+						startingAfter = priceList.data.length > 0
+							? priceList.data[priceList.data.length - 1].id
+							: undefined;
 					}
 
 					// Sync each price
@@ -132,20 +130,19 @@ serveFunction(
 										unit_amount: price.unit_amount || 0,
 										recurring_interval: price.recurring?.interval || null,
 										type: price.type === "recurring" ? "recurring" : "one_time",
-										usage_type:
-											price.billing_scheme === "per_unit"
-												? "licensed"
-												: "metered",
+										usage_type: price.billing_scheme === "per_unit"
+											? "licensed"
+											: "metered",
 										metadata: price.metadata || null,
 									},
 									{
 										onConflict: "stripe_price_id",
-									}
+									},
 								);
 
 							if (priceError) {
 								errors.push(
-									`Failed to sync price ${price.id}: ${priceError.message}`
+									`Failed to sync price ${price.id}: ${priceError.message}`,
 								);
 							} else {
 								syncedPrices++;
@@ -154,7 +151,7 @@ serveFunction(
 							errors.push(
 								`Error syncing price ${price.id}: ${
 									error instanceof Error ? error.message : "Unknown error"
-								}`
+								}`,
 							);
 						}
 					}
@@ -162,13 +159,13 @@ serveFunction(
 					errors.push(
 						`Error syncing product ${product.id}: ${
 							error instanceof Error ? error.message : "Unknown error"
-						}`
+						}`,
 					);
 				}
 			}
 
 			console.log(
-				`Sync complete: ${syncedProducts} products, ${syncedPrices} prices`
+				`Sync complete: ${syncedProducts} products, ${syncedPrices} prices`,
 			);
 
 			return respond({
@@ -187,5 +184,5 @@ serveFunction(
 				debugInfo: error instanceof Error ? error.message : "Unknown error",
 			});
 		}
-	}
+	},
 );

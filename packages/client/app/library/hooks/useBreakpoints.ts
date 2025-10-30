@@ -11,9 +11,19 @@ export function useBreakpoints(): {
 	isLargeBreakpoint: boolean;
 	isExtraLargeBreakpoint: boolean;
 } {
-	const [isMediumActive, setIsMediumActive] = useState<boolean>(false);
-	const [isLargeActive, setIsLargeActive] = useState<boolean>(false);
-	const [isExtraLargeActive, setIsExtraLargeActive] = useState<boolean>(false);
+	const [isMediumActive, setIsMediumActive] = useState<boolean>(() => {
+		if (typeof window === "undefined") return false;
+		return window.matchMedia(`(min-width: ${breakpoints.medium}px)`).matches;
+	});
+	const [isLargeActive, setIsLargeActive] = useState<boolean>(() => {
+		if (typeof window === "undefined") return false;
+		return window.matchMedia(`(min-width: ${breakpoints.large}px)`).matches;
+	});
+	const [isExtraLargeActive, setIsExtraLargeActive] = useState<boolean>(() => {
+		if (typeof window === "undefined") return false;
+		return window.matchMedia(`(min-width: ${breakpoints.extraLarge}px)`)
+			.matches;
+	});
 
 	useEffect(() => {
 		const mqlMedium = window.matchMedia(`(min-width: ${breakpoints.medium}px)`);
@@ -22,29 +32,26 @@ export function useBreakpoints(): {
 			`(min-width: ${breakpoints.extraLarge}px)`
 		);
 
-		const onChangeMedium = (e: MediaQueryListEvent | MediaQueryList) => {
+		const handleMediumChange = (e: MediaQueryListEvent) => {
 			setIsMediumActive(e.matches);
 		};
 
-		const onChangeLarge = (e: MediaQueryListEvent | MediaQueryList) => {
+		const handleLargeChange = (e: MediaQueryListEvent) => {
 			setIsLargeActive(e.matches);
 		};
 
-		const onChangeExtraLarge = (e: MediaQueryListEvent | MediaQueryList) => {
+		const handleExtraLargeChange = (e: MediaQueryListEvent) => {
 			setIsExtraLargeActive(e.matches);
 		};
 
-		mqlMedium.addEventListener("change", onChangeMedium);
-		mqlLarge.addEventListener("change", onChangeLarge);
-		mqlExtraLarge.addEventListener("change", onChangeExtraLarge);
-		onChangeMedium(mqlMedium);
-		onChangeLarge(mqlLarge);
-		onChangeExtraLarge(mqlExtraLarge);
+		mqlMedium.addEventListener("change", handleMediumChange);
+		mqlLarge.addEventListener("change", handleLargeChange);
+		mqlExtraLarge.addEventListener("change", handleExtraLargeChange);
 
 		return () => {
-			mqlMedium.removeEventListener("change", onChangeMedium);
-			mqlLarge.removeEventListener("change", onChangeLarge);
-			mqlExtraLarge.removeEventListener("change", onChangeExtraLarge);
+			mqlMedium.removeEventListener("change", handleMediumChange);
+			mqlLarge.removeEventListener("change", handleLargeChange);
+			mqlExtraLarge.removeEventListener("change", handleExtraLargeChange);
 		};
 	}, []);
 

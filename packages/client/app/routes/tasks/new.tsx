@@ -1,10 +1,4 @@
-import {
-	Link,
-	redirect,
-	Form,
-	useNavigation,
-	useSearchParams,
-} from "react-router";
+import { Link, redirect, Form, useNavigation } from "react-router";
 import { createPageTitle } from "~/library/utilities";
 import { AuthContext } from "~/library/supabase/auth";
 import { createTask } from "~/features/tasks";

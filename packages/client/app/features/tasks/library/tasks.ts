@@ -12,7 +12,7 @@ export interface CreateTaskData {
 
 export interface UpdateTaskData {
 	description?: string;
-	completedAt?: Date | null;
+	completedAt?: string | null;
 }
 
 /**
@@ -92,7 +92,7 @@ export async function updateTask(
 	id: string,
 	data: UpdateTaskData
 ): Promise<Task> {
-	const updateData: any = {};
+	const updateData: Partial<TaskUpdate> = {};
 
 	if (data.description !== undefined) {
 		updateData.description = data.description;

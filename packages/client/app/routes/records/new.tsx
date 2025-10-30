@@ -87,6 +87,15 @@ export async function action({ request, context }: Route.ActionArgs) {
 			throw error;
 		}
 
+		// Log more details about the error for debugging
+		if (error instanceof Error) {
+			console.error("Error details:", {
+				message: error.message,
+				stack: error.stack,
+				name: error.name,
+			});
+		}
+
 		return {
 			error: error instanceof Error ? error.message : "Failed to create record",
 		};

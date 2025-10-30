@@ -7,7 +7,7 @@ create table public.record_embedding (
   record_id       uuid        not null
                   references public.record(id) on delete cascade,
   project_id      uuid        references public.project(id) on delete cascade,
-  embedding       vector(1536), -- Default OpenAI embedding dimension
+  embedding       extensions.vector(1536), -- Default OpenAI embedding dimension
   model           text        not null,
   created_at      timestamptz not null default now()
 );
@@ -33,7 +33,7 @@ create table public.content_chunk (
   chunk_index     integer     not null,
   text            text        not null,
   text_tsv        tsvector,
-  embedding       vector(1536), -- Default OpenAI embedding dimension
+  embedding       extensions.vector(1536), -- Default OpenAI embedding dimension
   model           text,
   created_at      timestamptz not null default now(),
   

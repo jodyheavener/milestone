@@ -14,14 +14,14 @@ export function getStripeClient(): Stripe {
 
 export function verifyWebhookSignature(
 	payload: string,
-	signature: string
+	signature: string,
 ): Stripe.Event | null {
 	try {
 		const stripeClient = getStripeClient();
 		const event = stripeClient.webhooks.constructEvent(
 			payload,
 			signature,
-			stripe.webhookSecret
+			stripe.webhookSecret,
 		);
 		return event;
 	} catch (error) {

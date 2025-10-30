@@ -46,7 +46,7 @@ serveFunction(
 						type,
 						metadata
 					)
-				`
+				`,
 				)
 				.eq("active", true)
 				.order("created_at", { ascending: true });
@@ -85,14 +85,14 @@ serveFunction(
 					description: product.description,
 					metadata: product.metadata,
 					prices: (product.stripe_prices || []).filter(
-						(price) => price.type === "recurring"
+						(price) => price.type === "recurring",
 					),
-				})
+				}),
 			);
 
 			// Filter out products with no recurring prices (only show subscription products)
 			const productsWithPrices = formattedProducts.filter(
-				(product) => product.prices.length > 0
+				(product) => product.prices.length > 0,
 			);
 
 			return respond(productsWithPrices);
@@ -106,5 +106,5 @@ serveFunction(
 				debugInfo: error instanceof Error ? error.message : "Unknown error",
 			});
 		}
-	}
+	},
 );

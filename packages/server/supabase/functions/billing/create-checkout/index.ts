@@ -72,13 +72,22 @@ serveFunction<["price_ids", "plan_key"]>(
 				// Validate that the customer still exists in Stripe
 				const stripeClient = getStripeClient();
 				try {
-					await stripeClient.customers.retrieve(existingCustomer.stripe_customer_id);
+					await stripeClient.customers.retrieve(
+						existingCustomer.stripe_customer_id,
+					);
 					stripeCustomerId = existingCustomer.stripe_customer_id;
-				} catch (stripeError: any) {
+				} catch (stripeError: unknown) {
 					// If customer doesn't exist in Stripe, create a new one
-					if (stripeError?.code === "resource_missing") {
-						console.log(`Customer ${existingCustomer.stripe_customer_id} not found in Stripe, creating new one`);
-						
+					if (
+						stripeError &&
+						typeof stripeError === "object" &&
+						"code" in stripeError &&
+						stripeError.code === "resource_missing"
+					) {
+						console.log(
+							`Customer ${existingCustomer.stripe_customer_id} not found in Stripe, creating new one`,
+						);
+
 						const customer = await stripeClient.customers.create({
 							email: user.email,
 							metadata: {

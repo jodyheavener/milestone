@@ -37,11 +37,17 @@ serveFunction(
 			const stripeClient = getStripeClient();
 			try {
 				await stripeClient.customers.retrieve(customer.stripe_customer_id);
-			} catch (stripeError: any) {
+			} catch (stripeError: unknown) {
 				// If customer doesn't exist in Stripe, throw error
-				if (stripeError?.code === "resource_missing") {
+				if (
+					stripeError &&
+					typeof stripeError === "object" &&
+					"code" in stripeError &&
+					stripeError.code === "resource_missing"
+				) {
 					throw new ServiceError("NOT_FOUND", {
-						debugInfo: "Customer not found in Stripe. Please create a new subscription.",
+						debugInfo:
+							"Customer not found in Stripe. Please create a new subscription.",
 					});
 				} else {
 					// Re-throw other Stripe errors

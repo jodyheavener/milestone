@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link } from "react-router";
 import { useAuth } from "~/features/authentication";
 import {
@@ -13,26 +13,13 @@ export default function ProfileRoute() {
 	const [error, setError] = useState<string | null>(null);
 	const [success, setSuccess] = useState<string | null>(null);
 
-	const [formData, setFormData] = useState<ProfileFormData>(() => ({
+	const [formData, setFormData] = useState<ProfileFormData>({
 		name: user?.name || "",
 		job_title: user?.job_title || "",
 		employer_name: user?.employer_name || "",
 		employer_description: user?.employer_description || "",
 		employer_website: user?.employer_website || "",
-	}));
-
-	// Update form data when user changes
-	useEffect(() => {
-		if (user) {
-			setFormData({
-				name: user.name || "",
-				job_title: user.job_title || "",
-				employer_name: user.employer_name || "",
-				employer_description: user.employer_description || "",
-				employer_website: user.employer_website || "",
-			});
-		}
-	}, [user]);
+	});
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();

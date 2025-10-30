@@ -1,10 +1,10 @@
 import "@supabase/functions-js";
 import { ServiceError } from "@m/shared";
 import {
+	isEnv,
 	serveFunction,
 	supabaseClient,
 	verifyWebhookSignature,
-	isEnv,
 } from "~/library";
 import type Stripe from "stripe";
 
@@ -25,7 +25,7 @@ serveFunction(
 			// Skip webhook verification in local environment
 			if (isEnv("lcl")) {
 				console.log(
-					"Local environment detected, skipping webhook signature verification"
+					"Local environment detected, skipping webhook signature verification",
 				);
 				event = JSON.parse(body) as Stripe.Event;
 			} else {
@@ -59,20 +59,20 @@ serveFunction(
 			switch (event.type) {
 				case "checkout.session.completed": {
 					await handleCheckoutSessionCompleted(
-						event.data.object as Stripe.Checkout.Session
+						event.data.object as Stripe.Checkout.Session,
 					);
 					break;
 				}
 				case "customer.subscription.created":
 				case "customer.subscription.updated": {
 					await handleSubscriptionCreatedOrUpdated(
-						event.data.object as Stripe.Subscription
+						event.data.object as Stripe.Subscription,
 					);
 					break;
 				}
 				case "customer.subscription.deleted": {
 					await handleSubscriptionDeleted(
-						event.data.object as Stripe.Subscription
+						event.data.object as Stripe.Subscription,
 					);
 					break;
 				}
@@ -108,17 +108,17 @@ serveFunction(
 			}
 
 			console.error("Webhook processing error:", error);
-			
+
 			// Log additional context for debugging
 			if (error instanceof Error) {
 				console.error("Error stack:", error.stack);
 			}
-			
+
 			throw new ServiceError("INTERNAL_ERROR", {
 				debugInfo: error instanceof Error ? error.message : "Unknown error",
 			});
 		}
-	}
+	},
 );
 
 function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
@@ -133,7 +133,7 @@ function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
 }
 
 async function handleSubscriptionCreatedOrUpdated(
-	subscription: Stripe.Subscription
+	subscription: Stripe.Subscription,
 ) {
 	if (!subscription.customer || typeof subscription.customer !== "string") {
 		console.error("Subscription missing customer");
@@ -163,15 +163,19 @@ async function handleSubscriptionCreatedOrUpdated(
 	}
 
 	// Convert timestamps (now nullable)
-	const currentPeriodStart = subscription.current_period_start 
+	const currentPeriodStart = subscription.current_period_start
 		? new Date(subscription.current_period_start * 1000).toISOString()
 		: null;
-	
-	const currentPeriodEnd = subscription.current_period_end 
+
+	const currentPeriodEnd = subscription.current_period_end
 		? new Date(subscription.current_period_end * 1000).toISOString()
 		: null;
 
-	console.log(`Processing subscription ${subscription.id} with period ${currentPeriodStart || 'null'} to ${currentPeriodEnd || 'null'}`);
+	console.log(
+		`Processing subscription ${subscription.id} with period ${
+			currentPeriodStart || "null"
+		} to ${currentPeriodEnd || "null"}`,
+	);
 
 	// Upsert subscription
 	const { data: subscriptionData, error: subError } = await supabaseClient
@@ -187,7 +191,7 @@ async function handleSubscriptionCreatedOrUpdated(
 			},
 			{
 				onConflict: "stripe_subscription_id",
-			}
+			},
 		)
 		.select()
 		.single();
@@ -232,13 +236,14 @@ async function handleSubscriptionCreatedOrUpdated(
 				stripe_subscription_item_id: item.id,
 				stripe_price_id: price.id,
 				quantity: item.quantity || 1,
-				usage_type:
-					item.price.billing_scheme === "per_unit" ? "licensed" : "metered",
+				usage_type: item.price.billing_scheme === "per_unit"
+					? "licensed"
+					: "metered",
 				metadata: item.metadata || null,
 			},
 			{
 				onConflict: "stripe_subscription_item_id",
-			}
+			},
 		);
 	}
 
@@ -308,7 +313,7 @@ async function handleProductUpdated(product: Stripe.Product) {
 		},
 		{
 			onConflict: "stripe_product_id",
-		}
+		},
 	);
 
 	if (error) {
@@ -343,7 +348,7 @@ async function handlePriceUpdated(price: Stripe.Price) {
 		},
 		{
 			onConflict: "stripe_price_id",
-		}
+		},
 	);
 
 	if (error) {
@@ -353,7 +358,7 @@ async function handlePriceUpdated(price: Stripe.Price) {
 
 async function updateEntitlementsFromSubscription(
 	userId: string,
-	stripeSubscriptionId: string
+	stripeSubscriptionId: string,
 ) {
 	// Get subscription with items
 	const { data: subscription, error: subError } = await supabaseClient
@@ -366,7 +371,7 @@ async function updateEntitlementsFromSubscription(
 				stripe_price_id,
 				metadata
 			)
-		`
+		`,
 		)
 		.eq("stripe_subscription_id", stripeSubscriptionId)
 		.single();
@@ -410,7 +415,9 @@ async function updateEntitlementsFromSubscription(
 
 	// Calculate subscription period end - handle nullable timestamp
 	if (!subscription.current_period_end) {
-		console.log("Subscription missing current_period_end, skipping entitlements update");
+		console.log(
+			"Subscription missing current_period_end, skipping entitlements update",
+		);
 		return;
 	}
 
@@ -430,12 +437,12 @@ async function updateEntitlementsFromSubscription(
 			},
 			{
 				onConflict: "user_id",
-			}
+			},
 		);
 
 	if (entitlementsError) {
 		console.error(
-			`Failed to update entitlements: ${entitlementsError.message}`
+			`Failed to update entitlements: ${entitlementsError.message}`,
 		);
 	}
 
@@ -451,7 +458,7 @@ async function updateEntitlementsFromSubscription(
 		},
 		{
 			onConflict: "user_id,period_start,period_end",
-		}
+		},
 	);
 
 	// Note: Agentic requests use a fixed 12-hour rolling window
@@ -460,7 +467,7 @@ async function updateEntitlementsFromSubscription(
 
 async function handleCustomerDeleted(customer: Stripe.Customer) {
 	console.log(`Customer deleted: ${customer.id}`);
-	
+
 	// Delete the customer record from our database
 	const { error } = await supabaseClient
 		.from("billing_customers")

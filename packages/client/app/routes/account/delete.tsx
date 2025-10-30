@@ -121,7 +121,7 @@ export default function DeleteAccountRoute() {
 					<div className="flex justify-between">
 						<button
 							type="button"
-							onClick={() => navigate("/account/settings")}
+							onClick={() => navigate("/account")}
 							className="px-6 py-2 border border-border text-foreground rounded-md hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
 						>
 							Cancel

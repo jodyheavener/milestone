@@ -129,10 +129,9 @@ export default function BillingRoute({ loaderData }: Route.ComponentProps) {
 										Current Period End
 									</p>
 									<p className="text-lg font-semibold text-foreground">
-										{subscription.current_period_end 
+										{subscription.current_period_end
 											? formatDate(subscription.current_period_end)
-											: "Not available"
-										}
+											: "Not available"}
 									</p>
 								</div>
 								<div>
@@ -140,10 +139,9 @@ export default function BillingRoute({ loaderData }: Route.ComponentProps) {
 										Current Period Start
 									</p>
 									<p className="text-lg font-semibold text-foreground">
-										{subscription.current_period_start 
+										{subscription.current_period_start
 											? formatDate(subscription.current_period_start)
-											: "Not available"
-										}
+											: "Not available"}
 									</p>
 								</div>
 								{subscription.cancel_at_period_end && (
