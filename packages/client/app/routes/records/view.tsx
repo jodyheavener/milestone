@@ -140,16 +140,6 @@ export default function Component({ loaderData }: Route.ComponentProps) {
 													{formatFileSize(record.file.file_size)}
 												</div>
 											</div>
-											<a
-												href={`/api/files/${record.file.id}/download`}
-												download
-												className={cn(
-													"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-													"h-8 px-3 py-1 bg-primary text-primary-foreground hover:bg-primary/90"
-												)}
-											>
-												Download
-											</a>
 										</div>
 									</div>
 								) : record.website ? (

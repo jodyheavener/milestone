@@ -93,11 +93,11 @@ begin
   -- Construct the sync function URL
   -- In production, this would be your actual Supabase project URL
   -- For local development, this is the local Supabase URL
-  sync_url := current_setting('app.settings.supabase_url', true) || '/functions/v1/stripe-sync-catalog';
+  sync_url := current_setting('app.settings.supabase_url', true) || '/functions/v1/sync-stripe-catalog';
   
   -- If no URL is configured, use localhost for local development
   if sync_url is null or sync_url = '' then
-    sync_url := 'http://127.0.0.1:54321/functions/v1/stripe-sync-catalog';
+    sync_url := 'http://127.0.0.1:54321/functions/v1/sync-stripe-catalog';
   end if;
 
   -- Get sync secret from environment (optional, for additional security)

@@ -1,3 +1,5 @@
+import { logger } from "~/library";
+
 export interface CleanupResult {
 	totalFiles: number;
 	orphanedFiles: number;
@@ -32,16 +34,16 @@ export function isTemporaryUserFile(
 
 export function logProgress(message: string, data?: unknown): void {
 	if (data) {
-		console.log(`[Cleanup] ${message}`, data);
+		logger.info(message, { data });
 	} else {
-		console.log(`[Cleanup] ${message}`);
+		logger.info(message);
 	}
 }
 
 export function logError(message: string, error?: unknown): void {
 	if (error) {
-		console.error(`[Cleanup Error] ${message}`, error);
+		logger.error(message, { error });
 	} else {
-		console.error(`[Cleanup Error] ${message}`);
+		logger.error(message);
 	}
 }

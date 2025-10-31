@@ -1,105 +1,74 @@
 import "@supabase/functions-js";
+import { Hono, z } from "~/library";
+import { getUserClient } from "~/library";
+import { getAuthHeader, getUserOrThrow } from "~/library";
+import { handleRequest, json, logger, withCORS } from "~/library";
 import { ServiceError } from "@m/shared";
-import { serveFunction, supabaseClient } from "~/library";
-import { extractTextFromPDF } from "./pdf-parser.ts";
-import { extractTextFromImage } from "./image-parser.ts";
-import { extractTextFromCSV } from "./csv-parser.ts";
 import { generateSummary } from "./summarizer.ts";
+import { downloadFile, extractTextFromFile } from "./extraction.ts";
 
-interface ParseFileResponse {
-	extractedText: string;
-	summary: string;
-	parser: string;
-	date?: string | null;
-}
+const app = new Hono();
 
-serveFunction<["storagePath"]>(
-	{
-		methods: ["POST"],
-		setCors: true,
-		authed: true,
-		args: ["storagePath"] as const,
-	},
-	async ({ args, user, respond }) => {
-		const { storagePath } = args as { storagePath: string };
+// Validation schema
+const ParseFileSchema = z.object({
+	storagePath: z.string().min(1),
+});
 
-		if (!user) {
-			throw new ServiceError("UNAUTHORIZED");
-		}
+// Preflight
+app.options("*", () => new Response(null, { status: 204 }));
+
+/**
+ * Parse file from storage and extract text content
+ * Supports PDF, images, and CSV files
+ * Returns extracted text and AI-generated summary
+ */
+app.post(
+	"/parse-file",
+	handleRequest(async (c, requestId) => {
+		// Auth as user
+		const sbUserClient = getUserClient(getAuthHeader(c.req.raw));
+		const user = await getUserOrThrow(sbUserClient);
+
+		// Validate input
+		const body = await c.req.json();
+		const input = ParseFileSchema.parse(body);
+
+		logger.info("Parse file", {
+			userId: user.id,
+			storagePath: input.storagePath,
+		});
 
 		// Validate storage path belongs to user
-		if (!storagePath.startsWith(`${user.id}/`)) {
+		if (!input.storagePath.startsWith(`${user.id}/`)) {
 			throw new ServiceError("UNAUTHORIZED", {
 				debugInfo: "Storage path does not belong to user",
 			});
 		}
 
-		try {
-			// Download file from storage
-			const { data: fileData, error: downloadError } = await supabaseClient
-				.storage.from("attachments").download(storagePath);
+		// Download file and get mime type
+		const { buffer, mimeType } = await downloadFile(input.storagePath);
 
-			if (downloadError) {
-				throw new ServiceError("FILE_NOT_FOUND", {
-					debugInfo: downloadError.message,
-				});
-			}
+		// Extract text based on mime type
+		const extractionResult = await extractTextFromFile(buffer, mimeType);
 
-			// Convert to buffer
-			const fileBuffer = new Uint8Array(await fileData.arrayBuffer());
+		// Generate summary using OpenAI
+		const summary = await generateSummary(extractionResult.text, mimeType);
 
-			// Get file metadata to determine mime type
-			const { data: fileInfo } = await supabaseClient.storage
-				.from("attachments")
-				.list(storagePath.split("/").slice(0, -1).join("/"), {
-					search: storagePath.split("/").pop(),
-				});
+		const response = {
+			extractedText: extractionResult.text,
+			summary,
+			parser: extractionResult.parser,
+			...(extractionResult.date && { date: extractionResult.date }),
+			requestId,
+		};
 
-			const mimeType = fileInfo?.[0]?.metadata?.mimetype ||
-				"application/octet-stream";
-
-			// Extract text based on mime type
-			let extractedText = "";
-			let parser = "";
-			let extractedDate: string | null = null;
-
-			if (mimeType === "application/pdf") {
-				extractedText = await extractTextFromPDF(fileBuffer);
-				parser = "unpdf";
-			} else if (mimeType.startsWith("image/")) {
-				const imageResult = await extractTextFromImage(fileBuffer, mimeType);
-				extractedText = imageResult.text;
-				extractedDate = imageResult.date;
-				parser = "openai-vision";
-			} else if (mimeType === "text/csv") {
-				extractedText = extractTextFromCSV(fileBuffer);
-				parser = "deno-std-csv";
-			} else {
-				throw new ServiceError("UNSUPPORTED_FILE_TYPE", {
-					debugInfo: `Unsupported mime type: ${mimeType}`,
-				});
-			}
-
-			// Generate summary using OpenAI
-			const summary = await generateSummary(extractedText, mimeType);
-
-			const response: ParseFileResponse = {
-				extractedText,
-				summary,
-				parser,
-				...(extractedDate !== null && { date: extractedDate }),
-			};
-
-			return respond(response);
-		} catch (error) {
-			if (error instanceof ServiceError) {
-				throw error;
-			}
-
-			console.error("Parse file error:", error);
-			throw new ServiceError("INTERNAL_ERROR", {
-				debugInfo: error instanceof Error ? error.message : "Unknown error",
-			});
-		}
-	},
+		return json(response);
+	}),
 );
+
+export default {
+	fetch: async (req: Request) => {
+		const res = await app.fetch(req);
+		return withCORS()(req, res);
+	},
+};

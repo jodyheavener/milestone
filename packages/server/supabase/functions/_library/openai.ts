@@ -1,6 +1,18 @@
-import { openai } from "./config.ts";
 import OpenAI from "openai";
+import { env } from "./env.ts";
 
-export const openaiClient = new OpenAI({
-	apiKey: openai.apiKey,
-});
+let openaiClient: OpenAI | null = null;
+
+/**
+ * Get or create OpenAI client instance
+ */
+export function getOpenaiClient(): OpenAI {
+	if (!openaiClient) {
+		const apiKey = env("OPENAI_API_KEY")!;
+		openaiClient = new OpenAI({
+			apiKey,
+		});
+	}
+
+	return openaiClient;
+}

@@ -82,10 +82,12 @@ export async function action({ request, context }: Route.ActionArgs) {
 
 		throw redirect("/records");
 	} catch (error) {
-		console.error("Error creating record:", error);
+		// Re-throw redirects immediately without logging
 		if (error instanceof Response) {
 			throw error;
 		}
+
+		console.error("Error creating record:", error);
 
 		// Log more details about the error for debugging
 		if (error instanceof Error) {

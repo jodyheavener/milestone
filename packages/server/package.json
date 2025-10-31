@@ -12,6 +12,7 @@
 		"info": "supabase status",
 		"lint/check": "deno lint --config supabase/functions/deno.json",
 		"lint/fix": "deno lint --fix --config supabase/functions/deno.json",
+		"lint/types": "deno check --quiet --config supabase/functions/deno.json",
 		"start": "supabase start",
 		"stop": "supabase stop"
 	},

@@ -1,10 +1,9 @@
 import { extractText } from "unpdf";
+import { logger } from "~/library";
 import { normalizeText } from "./utils.ts";
 
 /**
  * Extracts text content from PDF files
- * @param fileBuffer - PDF file as Uint8Array
- * @returns Extracted and normalized text
  */
 export async function extractTextFromPDF(
 	fileBuffer: Uint8Array,
@@ -20,7 +19,7 @@ export async function extractTextFromPDF(
 
 		return normalizeText(text);
 	} catch (error) {
-		console.error("PDF extraction error:", error);
+		logger.error("PDF extraction error", { error });
 		throw new Error("Failed to extract text from PDF");
 	}
 }

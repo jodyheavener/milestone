@@ -1,4 +1,5 @@
 import { parse } from "@std/csv";
+import { logger } from "~/library";
 import { normalizeText } from "./utils.ts";
 
 export function extractTextFromCSV(fileBuffer: Uint8Array): string {
@@ -29,7 +30,7 @@ export function extractTextFromCSV(fileBuffer: Uint8Array): string {
 
 		return normalizeText(lines.join("\n"));
 	} catch (error) {
-		console.error("CSV extraction error:", error);
+		logger.error("CSV extraction error", { error });
 		throw new Error("Failed to extract text from CSV");
 	}
 }

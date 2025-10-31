@@ -1,10 +1,7 @@
-import { openaiClient } from "~/library";
+import { getOpenaiClient, logger } from "~/library";
 
 /**
  * Generates a concise summary of extracted web page content using OpenAI
- * @param content - Web page content to summarize
- * @param pageTitle - Title of the web page (optional)
- * @returns Generated summary tailored for web content
  */
 export async function generateWebsiteSummary(
 	content: string,
@@ -30,7 +27,8 @@ Write the summary in a clear, professional tone that would be useful for someone
 			? `Please analyze and summarize the following web page content from "${pageTitle}":\n\n${truncatedContent}`
 			: `Please analyze and summarize the following web page content:\n\n${truncatedContent}`;
 
-		const response = await openaiClient.responses.create({
+		const client = getOpenaiClient();
+		const response = await client.responses.create({
 			input: [
 				{
 					content: systemPrompt,
@@ -66,7 +64,7 @@ Write the summary in a clear, professional tone that would be useful for someone
 		const result = JSON.parse(response.output_text || "{}");
 		return result.summary || truncatedContent.substring(0, 500);
 	} catch (error) {
-		console.error("OpenAI API error for website summary:", error);
+		logger.error("OpenAI API error for website summary", { error });
 		// Fallback to naive summary
 		return (
 			truncatedContent.substring(0, 500) +

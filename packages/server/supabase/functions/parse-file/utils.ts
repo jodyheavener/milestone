@@ -4,8 +4,6 @@
 
 /**
  * Normalizes extracted text by cleaning up whitespace and formatting
- * @param text - Raw text to normalize
- * @returns Cleaned and normalized text
  */
 export function normalizeText(text: string): string {
 	return text
@@ -19,8 +17,6 @@ export function normalizeText(text: string): string {
 
 /**
  * Converts Uint8Array to base64 string for API calls
- * @param buffer - Binary data as Uint8Array
- * @returns Base64 encoded string
  */
 export function uint8ArrayToBase64(buffer: Uint8Array): string {
 	const binaryString = Array.from(buffer, (byte) => String.fromCharCode(byte))

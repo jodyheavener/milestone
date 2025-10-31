@@ -1,10 +1,7 @@
-import { openaiClient } from "~/library";
+import { getOpenaiClient, logger } from "~/library";
 
 /**
  * Generates a concise summary of extracted text using OpenAI
- * @param text - Text to summarize
- * @param mimeType - MIME type of the source file
- * @returns Generated summary
  */
 export async function generateSummary(
 	text: string,
@@ -16,7 +13,8 @@ export async function generateSummary(
 		: text;
 
 	try {
-		const response = await openaiClient.responses.create({
+		const client = getOpenaiClient();
+		const response = await client.responses.create({
 			input: [
 				{
 					content:
@@ -54,7 +52,7 @@ export async function generateSummary(
 		const result = JSON.parse(response.output_text || "{}");
 		return result.summary || truncatedText.substring(0, 500);
 	} catch (error) {
-		console.error("OpenAI API error:", error);
+		logger.error("OpenAI API error", { error });
 		// Fallback to naive summary
 		return (
 			truncatedText.substring(0, 500) +

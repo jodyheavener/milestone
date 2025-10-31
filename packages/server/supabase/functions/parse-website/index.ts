@@ -1,78 +1,75 @@
 import "@supabase/functions-js";
+import { Hono, z } from "~/library";
+import { getUserClient } from "~/library";
+import { getAuthHeader, getUserOrThrow } from "~/library";
+import { handleRequest, json, logger, withCORS } from "~/library";
 import { ServiceError } from "@m/shared";
-import { serveFunction } from "~/library";
 import { extractPage } from "./website-parser.ts";
 import { generateWebsiteSummary } from "./summarizer.ts";
+import { validateUrl } from "./validation.ts";
 
-interface ParseWebsiteResponse {
-	pageTitle: string;
-	extractedContent: string;
-	summary: string;
-}
+const app = new Hono();
 
-serveFunction<["url"]>(
-	{
-		methods: ["POST"],
-		setCors: true,
-		authed: true,
-		args: ["url"] as const,
-	},
-	async ({ args, user, respond }) => {
-		const { url } = args as { url: string };
+// Validation schema
+const ParseWebsiteSchema = z.object({
+	url: z.string().url(),
+});
 
-		if (!user) {
-			throw new ServiceError("UNAUTHORIZED");
-		}
+// Preflight
+app.options("*", () => new Response(null, { status: 204 }));
 
-		try {
-			// Validate URL format
-			let parsedUrl: URL;
-			try {
-				parsedUrl = new URL(url);
-			} catch {
-				throw new ServiceError("INVALID_URL", {
-					debugInfo: "Invalid URL format",
-				});
-			}
+/**
+ * Parse website content and extract text
+ * Returns page title, extracted content, and AI-generated summary
+ */
+app.post(
+	"/parse-website",
+	handleRequest(async (c, requestId) => {
+		// Auth as user
+		const sbUserClient = getUserClient(getAuthHeader(c.req.raw));
+		const user = await getUserOrThrow(sbUserClient);
 
-			// Only allow HTTP/HTTPS URLs
-			if (!["http:", "https:"].includes(parsedUrl.protocol)) {
-				throw new ServiceError("INVALID_URL", {
-					debugInfo: "Only HTTP and HTTPS URLs are allowed",
-				});
-			}
+		// Validate input
+		const body = await c.req.json();
+		const input = ParseWebsiteSchema.parse(body);
 
-			// Extract page content using Readability
-			const pageData = await extractPage(url);
+		logger.info("Parse website", {
+			userId: user.id,
+			url: input.url,
+		});
 
-			if (!pageData.content || pageData.content.trim().length === 0) {
-				throw new ServiceError("NO_CONTENT", {
-					debugInfo: "No content could be extracted from the page",
-				});
-			}
+		// Validate URL format and protocol
+		validateUrl(input.url);
 
-			// Generate summary using OpenAI
-			const summary = await generateWebsiteSummary(
-				pageData.content,
-				pageData.title,
-			);
+		// Extract page content
+		const pageData = await extractPage(input.url);
 
-			const response: ParseWebsiteResponse = {
-				pageTitle: pageData.title || "Untitled",
-				extractedContent: pageData.content,
-				summary,
-			};
-
-			return respond(response);
-		} catch (error) {
-			if (error instanceof ServiceError) {
-				throw error;
-			}
-
-			console.error("Parse website error:", error);
-			throw new ServiceError("INTERNAL_ERROR", {
-				debugInfo: error instanceof Error ? error.message : "Unknown error",
+		if (!pageData.content || pageData.content.trim().length === 0) {
+			throw new ServiceError("NO_CONTENT", {
+				debugInfo: "No content could be extracted from the page",
 			});
 		}
-	},
+
+		// Generate summary using OpenAI
+		const summary = await generateWebsiteSummary(
+			pageData.content,
+			pageData.title,
+		);
+
+		const response = {
+			pageTitle: pageData.title || "Untitled",
+			extractedContent: pageData.content,
+			summary,
+			requestId,
+		};
+
+		return json(response);
+	}),
 );
+
+export default {
+	fetch: async (req: Request) => {
+		const res = await app.fetch(req);
+		return withCORS()(req, res);
+	},
+};

@@ -1,4 +1,4 @@
-import { openaiClient } from "~/library";
+import { getOpenaiClient, logger } from "~/library";
 import { normalizeText, uint8ArrayToBase64 } from "./utils.ts";
 
 export interface ImageExtractionResult {
@@ -14,7 +14,8 @@ export async function extractTextFromImage(
 		// Convert Uint8Array to base64 for OpenAI Vision API
 		const base64Image = uint8ArrayToBase64(fileBuffer);
 
-		const response = await openaiClient.responses.create({
+		const client = getOpenaiClient();
+		const response = await client.responses.create({
 			model: "gpt-4o",
 			input: [
 				{
@@ -64,7 +65,7 @@ export async function extractTextFromImage(
 			date: result.date || null,
 		};
 	} catch (error) {
-		console.error("OpenAI Vision API error:", error);
+		logger.error("OpenAI Vision API error", { error });
 		throw new Error("Failed to extract text from image");
 	}
 }

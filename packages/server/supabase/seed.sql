@@ -63,3 +63,34 @@ insert into auth.identities (
   from auth.users
   where email = 'test@example.com'
 );
+
+-- Seed data for profile setup
+-- This file sets up the profile for the test user created in user.sql
+
+-- Update the profile for the test user
+UPDATE public.profile 
+SET 
+    name = 'John Doe',
+    job_title = 'Software Developer',
+    employer_name = 'Brightstone Technologies',
+    employer_description = 'Brightstone Technologies is a global SaaS company focused on building secure, AI-powered data platforms for enterprise clients. With offices across North America and Europe, Brightstone helps organizations streamline analytics, improve compliance, and scale their digital transformation efforts.',
+    employer_website = 'https://brightstone.tech',
+    flags = ARRAY['unrestricted_operations']
+WHERE id = (
+    SELECT id FROM auth.users WHERE email = 'test@example.com'
+);
+
+-- Seed data for project setup
+-- This file creates a project for the test user created in user.sql
+
+-- Create a project for the test user
+INSERT INTO public.project (
+    user_id,
+    title,
+    goal
+) VALUES (
+    (SELECT id FROM auth.users WHERE email = 'test@example.com'),
+    'Performance Review Prep',
+    'Collect highlights and impact metrics from this review period to support my self-assessment.'
+);
+

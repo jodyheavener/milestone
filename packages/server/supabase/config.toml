@@ -60,11 +60,7 @@ schema_paths = []
 enabled = true
 # Specifies an ordered list of seed files to load during db reset.
 # Supports glob patterns relative to supabase directory: "./seeds/*.sql"
-sql_paths = [
-  "./seeds/user.sql",
-  "./seeds/profile.sql",
-  "./seeds/project.sql"
-]
+sql_paths = ["./seed.sql"]
 
 [db.network_restrictions]
 # Enable management of network restrictions.
@@ -363,44 +359,44 @@ entrypoint = "./functions/health/index.ts"
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/health/*.html" ]
 
-[functions.file-cleanup]
+[functions.cleanup-files]
 enabled = true
 verify_jwt = false
 import_map = "./functions/deno.json"
-entrypoint = "./functions/file-cleanup/index.ts"
+entrypoint = "./functions/cleanup-files/index.ts"
 
-[functions.billing-create-checkout]
+[functions.create-checkout]
 enabled = true
 verify_jwt = true
 import_map = "./functions/deno.json"
-entrypoint = "./functions/billing/create-checkout/index.ts"
+entrypoint = "./functions/create-checkout/index.ts"
 
-[functions.billing-create-portal]
+[functions.create-billing-portal]
 enabled = true
 verify_jwt = true
 import_map = "./functions/deno.json"
-entrypoint = "./functions/billing/create-portal/index.ts"
+entrypoint = "./functions/create-billing-portal/index.ts"
 
-[functions.billing-list-products]
+[functions.list-products]
 enabled = true
 verify_jwt = false
 import_map = "./functions/deno.json"
-entrypoint = "./functions/billing/list-products/index.ts"
+entrypoint = "./functions/list-products/index.ts"
 
 [functions.stripe-webhook]
 enabled = true
 verify_jwt = false
 import_map = "./functions/deno.json"
-entrypoint = "./functions/stripe/webhook/index.ts"
+entrypoint = "./functions/stripe-webhook/index.ts"
 
-[functions.stripe-sync-catalog]
+[functions.sync-stripe-catalog]
 enabled = true
 verify_jwt = false
 import_map = "./functions/deno.json"
-entrypoint = "./functions/stripe/sync-catalog/index.ts"
+entrypoint = "./functions/sync-stripe-catalog/index.ts"
 
-[functions.usage-authorize]
+[functions.authorize-operation]
 enabled = true
 verify_jwt = true
 import_map = "./functions/deno.json"
-entrypoint = "./functions/usage/authorize/index.ts"
+entrypoint = "./functions/authorize-operation/index.ts"

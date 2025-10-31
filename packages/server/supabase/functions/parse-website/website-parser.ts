@@ -1,3 +1,5 @@
+import { logger } from "~/library";
+
 export interface PageData {
 	html: string;
 	content: string;
@@ -11,8 +13,7 @@ export interface PageData {
  * Extracts content and metadata from a web page using basic HTML parsing
  */
 export async function extractPage(url: string): Promise<PageData> {
-	console.log("\nExtracting document from page...");
-	console.log("Processing URL:", url);
+	logger.info("Extracting document from page", { url });
 
 	const { html, lastModified } = await fetchHtml(url);
 

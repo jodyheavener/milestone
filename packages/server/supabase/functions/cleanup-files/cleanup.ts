@@ -1,5 +1,5 @@
 import { ServiceError } from "@m/shared";
-import { supabaseClient } from "~/library";
+import { getServiceClient } from "~/library";
 import {
 	CleanupResult,
 	createCleanupResult,
@@ -56,8 +56,10 @@ async function getStorageFiles(): Promise<
 		created_at: string;
 	}> | null
 > {
-	const { data: storageFiles, error: storageError } = await supabaseClient
-		.storage.from("attachments").list("", {
+	const sbUserClient = getServiceClient();
+	const { data: storageFiles, error: storageError } = await sbUserClient.storage
+		.from("attachments")
+		.list("", {
 			limit: 1000,
 			sortBy: { column: "created_at", order: "asc" },
 		});
@@ -72,7 +74,8 @@ async function getStorageFiles(): Promise<
 }
 
 async function getDatabaseFiles(): Promise<Set<string>> {
-	const { data: dbFiles, error: dbError } = await supabaseClient
+	const sbUserClient = getServiceClient();
+	const { data: dbFiles, error: dbError } = await sbUserClient
 		.from("file")
 		.select("storage_path");
 
@@ -112,9 +115,10 @@ async function deleteOrphans(
 	files: Array<{ name: string; created_at: string }>,
 	result: CleanupResult,
 ): Promise<void> {
+	const sbUserClient = getServiceClient();
 	for (const file of files) {
 		try {
-			const { error: deleteError } = await supabaseClient.storage
+			const { error: deleteError } = await sbUserClient.storage
 				.from("attachments")
 				.remove([file.name]);
 

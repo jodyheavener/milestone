@@ -74,26 +74,24 @@ export async function createCheckoutSession(
 		body.plan_key = planKey;
 	}
 
-	const { data, error } =
-		await supabase.functions.invoke<CreateCheckoutResponse>(
-			"billing-create-checkout",
-			{
-				body,
-				headers: {
-					Authorization: `Bearer ${session.access_token}`,
-				},
-			}
-		);
+	const { data, error } = await supabase.functions.invoke<{
+		data: CreateCheckoutResponse;
+	}>("create-checkout", {
+		body,
+		headers: {
+			Authorization: `Bearer ${session.access_token}`,
+		},
+	});
 
 	if (error) {
 		throw error;
 	}
 
-	if (!data) {
+	if (!data || !data.data) {
 		throw new Error("No data returned from checkout creation");
 	}
 
-	return data;
+	return data.data;
 }
 
 export async function createPortalSession(
@@ -108,7 +106,7 @@ export async function createPortalSession(
 	}
 
 	const { data, error } = await supabase.functions.invoke<CreatePortalResponse>(
-		"billing-create-portal",
+		"create-billing-portal",
 		{
 			headers: {
 				Authorization: `Bearer ${session.access_token}`,
@@ -141,7 +139,7 @@ export async function authorizeOperation(
 
 	const { data, error } =
 		await supabase.functions.invoke<AuthorizeOperationResponse>(
-			"usage-authorize",
+			"authorize-operation",
 			{
 				body: { op },
 				headers: {
@@ -256,8 +254,8 @@ export async function canCreateProject(
 export async function getProducts(
 	supabase: SupabaseClient
 ): Promise<Product[]> {
-	const { data, error } = await supabase.functions.invoke<Product[]>(
-		"billing-list-products",
+	const { data, error } = await supabase.functions.invoke<{ data: Product[] }>(
+		"list-products",
 		{
 			method: "GET",
 		}
@@ -267,9 +265,9 @@ export async function getProducts(
 		throw error;
 	}
 
-	if (!data) {
+	if (!data || !data.data) {
 		return [];
 	}
 
-	return data;
+	return data.data;
 }

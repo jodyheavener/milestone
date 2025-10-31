@@ -24,21 +24,21 @@ const routes: RouteConfig = [
 			route(":id", "./routes/projects/view.tsx"),
 			route(":id/edit", "./routes/projects/edit.tsx"),
 		]),
+
 		...prefix("records", [
 			index("./routes/records/list.tsx"),
 			route("new", "./routes/records/new.tsx"),
 			route(":id", "./routes/records/view.tsx"),
 			route(":id/edit", "./routes/records/edit.tsx"),
 		]),
+
 		...prefix("tasks", [
 			index("./routes/tasks/list.tsx"),
 			route("new", "./routes/tasks/new.tsx"),
 			route(":id", "./routes/tasks/view.tsx"),
 			route(":id/edit", "./routes/tasks/edit.tsx"),
 		]),
-		...prefix("api/files", [
-			route(":id/download", "./routes/api/files/download.tsx"),
-		]),
+
 		...prefix("account", [
 			index("./routes/account/account.tsx"),
 			route("profile", "./routes/account/profile.tsx"),
