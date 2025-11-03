@@ -1,4 +1,4 @@
-import { logger } from "~/library";
+import { logger } from "@/lib";
 
 export interface PageData {
 	html: string;

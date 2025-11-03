@@ -1,5 +1,5 @@
-import { ServiceError } from "@m/shared";
-import { getServiceClient } from "~/library";
+import { ServiceError } from "@milestone/shared";
+import { getServiceClient } from "@/lib";
 import {
 	CleanupResult,
 	createCleanupResult,

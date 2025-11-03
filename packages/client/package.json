@@ -18,20 +18,21 @@
 		"serve": "react-router-serve ./dist/server/index.js"
 	},
 	"dependencies": {
-		"@m/shared": "workspace:*",
+		"@milestone/shared": "workspace:*",
 		"@react-router/node": "^7.5.3",
 		"@react-router/serve": "^7.5.3",
-		"@supabase/ssr": "^0.7.0",
-		"@supabase/supabase-js": "^2.50.0",
 		"@stripe/react-stripe-js": "^5.3.0",
 		"@stripe/stripe-js": "^8.2.0",
+		"@supabase/ssr": "^0.7.0",
+		"@supabase/supabase-js": "^2.50.0",
 		"ahooks": "^3.9.5",
 		"clsx": "^2.1.1",
 		"isbot": "^5",
 		"lucide-react": "^0.548.0",
 		"react": "^19.1.0",
 		"react-dom": "^19.1.0",
-		"react-router": "^7.6.1"
+		"react-router": "^7.6.1",
+		"zod": "3.25.67"
 	},
 	"devDependencies": {
 		"@eslint-react/eslint-plugin": "^2.2.4",

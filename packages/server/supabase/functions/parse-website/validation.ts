@@ -1,4 +1,4 @@
-import { ServiceError } from "@m/shared";
+import { ServiceError } from "@milestone/shared";
 
 /**
  * Validate URL format and protocol

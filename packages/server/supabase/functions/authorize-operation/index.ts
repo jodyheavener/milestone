@@ -1,9 +1,9 @@
 import "@supabase/functions-js";
-import { Hono, z } from "~/library";
-import { getServiceClient, getUserClient } from "~/library";
-import { getAuthHeader, getUserOrThrow } from "~/library";
-import { handleRequest, json, logger, withCORS } from "~/library";
-import { ServiceError } from "@m/shared";
+import { Hono, z } from "@/lib";
+import { getServiceClient, getUserClient } from "@/lib";
+import { getAuthHeader, getUserOrThrow } from "@/lib";
+import { handleRequest, json, logger, withCORS } from "@/lib";
+import { ServiceError } from "@milestone/shared";
 
 const app = new Hono();
 

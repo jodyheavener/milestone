@@ -1,9 +1,9 @@
 import "@supabase/functions-js";
-import { Hono, z } from "~/library";
-import { getUserClient } from "~/library";
-import { getAuthHeader, getUserOrThrow } from "~/library";
-import { handleRequest, json, logger, withCORS } from "~/library";
-import { ServiceError } from "@m/shared";
+import { Hono, z } from "@/lib";
+import { getUserClient } from "@/lib";
+import { getAuthHeader, getUserOrThrow } from "@/lib";
+import { handleRequest, json, logger, withCORS } from "@/lib";
+import { ServiceError } from "@milestone/shared";
 import { generateSummary } from "./summarizer.ts";
 import { downloadFile, extractTextFromFile } from "./extraction.ts";
 

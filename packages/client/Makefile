@@ -1,4 +1,4 @@
-include ../../make/common.mk
+include ../../dev/common.mk
 
 .DEFAULT_GOAL := help
 
@@ -21,6 +21,11 @@ lint/check: ## Check client linting
 lint/fix: ## Fix client linting issues
 	@[ -n "$(PNPM)" ] || (echo "$(RED)pnpm not installed$(RESET)"; exit 1)
 	@pnpm run lint/fix
+
+.PHONY: lint/types
+lint/types: ## Type-check client package
+	@[ -n "$(PNPM)" ] || (echo "$(RED)pnpm not installed$(RESET)"; exit 1)
+	@pnpm run lint/types
 
 .PHONY: format/check
 format/check: ## Check client formatting

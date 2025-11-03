@@ -1,5 +1,5 @@
-import { getServiceClient, getStripeClient } from "~/library";
-import { ServiceError } from "@m/shared";
+import { getServiceClient, getStripeClient } from "@/lib";
+import { ServiceError } from "@milestone/shared";
 
 /**
  * Validate and retrieve Stripe customer for user

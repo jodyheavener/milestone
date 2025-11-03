@@ -1,4 +1,4 @@
-import { getServiceClient, getStripeClient, logger } from "~/library";
+import { getServiceClient, getStripeClient, logger } from "@/lib";
 import type Stripe from "stripe";
 
 /**

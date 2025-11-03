@@ -1,5 +1,5 @@
-import { getServiceClient } from "~/library";
-import { ServiceError } from "@m/shared";
+import { getServiceClient } from "@/lib";
+import { ServiceError } from "@milestone/shared";
 
 /**
  * Resolve price IDs from plan_key or price_ids input

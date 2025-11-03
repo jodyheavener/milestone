@@ -1,8 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../../db-types";
 import {
-	createAISearchService,
 	type ConversationSearchQuery,
+	createAISearchService,
 } from "../ai-search-service";
 import type { EmbeddingProvider } from "../content-processing";
 

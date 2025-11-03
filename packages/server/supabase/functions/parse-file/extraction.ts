@@ -1,5 +1,5 @@
-import { getServiceClient } from "~/library";
-import { ServiceError } from "@m/shared";
+import { getServiceClient } from "@/lib";
+import { ServiceError } from "@milestone/shared";
 import { extractTextFromPDF } from "./pdf-parser.ts";
 import { extractTextFromImage } from "./image-parser.ts";
 import { extractTextFromCSV } from "./csv-parser.ts";
@@ -18,7 +18,8 @@ export async function downloadFile(
 ): Promise<{ buffer: Uint8Array; mimeType: string }> {
 	const sbServiceClient = getServiceClient();
 	const { data: fileData, error: downloadError } = await sbServiceClient.storage
-		.from("attachments").download(storagePath);
+		.from("attachments")
+		.download(storagePath);
 
 	if (downloadError) {
 		throw new ServiceError("FILE_NOT_FOUND", {

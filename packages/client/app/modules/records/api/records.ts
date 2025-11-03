@@ -1,0 +1,336 @@
+import type { User } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@/lib/supabase";
+import type {
+	CreateRecordData,
+	Record,
+	RecordUpdate,
+	RecordWithProjects,
+	UpdateRecordData,
+} from "../model/types";
+
+/**
+ * Create a new record
+ */
+export async function createRecord(
+	supabase: SupabaseClient,
+	user: User,
+	data: CreateRecordData
+): Promise<Record> {
+	const { data: record, error } = await supabase
+		.from("record")
+		.insert({
+			content: data.content,
+			user_id: user.id,
+		})
+		.select()
+		.single();
+
+	if (error) {
+		throw error;
+	}
+
+	// If project IDs are provided, create the associations
+	if (data.projectIds && data.projectIds.length > 0) {
+		const recordProjectInserts = data.projectIds.map((projectId) => ({
+			record_id: record.id,
+			project_id: projectId,
+		}));
+
+		const { error: linkError } = await supabase
+			.from("record_project")
+			.insert(recordProjectInserts);
+
+		if (linkError) {
+			throw linkError;
+		}
+	}
+
+	// Handle attachment if provided
+	if (data.attachment) {
+		if (
+			data.attachment.type === "file" &&
+			(data.attachment.file || data.attachment.fileMetadata)
+		) {
+			// Get the storage path from parsed data (file was already uploaded)
+			const fileName =
+				data.attachment.fileMetadata?.name ||
+				data.attachment.file?.name ||
+				"unknown";
+			const storagePath =
+				data.attachment.parsedData?.storagePath || `${record.id}/${fileName}`;
+
+			// Create file attachment record with parsed data
+			const { error: fileError } = await supabase.from("file").insert({
+				record_id: record.id,
+				mime_type:
+					data.attachment.fileMetadata?.type ||
+					data.attachment.file?.type ||
+					"unknown",
+				file_size:
+					data.attachment.fileMetadata?.size || data.attachment.file?.size || 0,
+				storage_path: storagePath,
+				parser: data.attachment.parsedData?.parser || null,
+				extracted_text: data.attachment.parsedData?.extractedText || null,
+			});
+
+			if (fileError) {
+				throw fileError;
+			}
+
+			// If file wasn't uploaded yet, upload it now
+			if (!data.attachment.parsedData?.storagePath && data.attachment.file) {
+				const { error: uploadError } = await supabase.storage
+					.from("attachments")
+					.upload(storagePath, data.attachment.file);
+
+				if (uploadError) {
+					// If upload fails, clean up the database record
+					await supabase.from("file").delete().eq("record_id", record.id);
+					throw uploadError;
+				}
+			}
+		} else if (
+			data.attachment.type === "website" &&
+			data.attachment.websiteUrl
+		) {
+			// Create website attachment record with scanned data
+			const { error: websiteError } = await supabase.from("website").insert({
+				record_id: record.id,
+				address: data.attachment.websiteUrl,
+				page_title: data.attachment.websiteData?.pageTitle || "Untitled",
+				extracted_content: data.attachment.websiteData?.extractedContent || "",
+			});
+
+			if (websiteError) {
+				throw websiteError;
+			}
+		}
+	}
+
+	return record;
+}
+
+/**
+ * Get all records for the current user
+ */
+export async function getRecords(
+	supabase: SupabaseClient
+): Promise<RecordWithProjects[]> {
+	const { data: records, error } = await supabase
+		.from("record")
+		.select(
+			`
+			*,
+			record_project (
+				project_id,
+				project:project_id (
+					id,
+					title
+				)
+			),
+			file (*),
+			website (*)
+		`
+		)
+		.order("created_at", {
+			ascending: false,
+		});
+
+	if (error) {
+		throw error;
+	}
+
+	// Transform the data to flatten the project information
+	return records.map((record) => ({
+		...record,
+		projects:
+			record.record_project?.map((rp) => rp.project).filter(Boolean) || [],
+		file: record.file?.[0] || undefined,
+		website: record.website?.[0] || undefined,
+	}));
+}
+
+/**
+ * Get records for a specific project
+ */
+export async function getRecordsForProject(
+	supabase: SupabaseClient,
+	projectId: string
+): Promise<RecordWithProjects[]> {
+	// Get records that are either:
+	// 1. Linked to this specific project
+	// 2. Not linked to any project (available to all projects)
+	const { data: records, error } = await supabase
+		.from("record")
+		.select(
+			`
+			*,
+			record_project!inner (
+				project_id,
+				project:project_id (
+					id,
+					title
+				)
+			)
+		`
+		)
+		.eq("record_project.project_id", projectId)
+		.order("created_at", {
+			ascending: false,
+		});
+
+	if (error) {
+		throw error;
+	}
+
+	// Also get records that are not linked to any project (available to all)
+	const { data: unlinkedRecords, error: unlinkedError } = await supabase
+		.from("record")
+		.select(
+			`
+			*,
+			record_project (
+				project_id,
+				project:project_id (
+					id,
+					title
+				)
+			)
+		`
+		)
+		.is("record_project", null)
+		.order("created_at", {
+			ascending: false,
+		});
+
+	if (unlinkedError) {
+		throw unlinkedError;
+	}
+
+	// Combine and transform the data
+	const allRecords = [
+		...records.map((record) => ({
+			...record,
+			projects:
+				record.record_project?.map((rp) => rp.project).filter(Boolean) || [],
+		})),
+		...unlinkedRecords.map((record) => ({
+			...record,
+			projects: [],
+		})),
+	];
+
+	return allRecords;
+}
+
+/**
+ * Get a record by ID
+ */
+export async function getRecord(
+	supabase: SupabaseClient,
+	id: string
+): Promise<RecordWithProjects | null> {
+	const { data: record, error } = await supabase
+		.from("record")
+		.select(
+			`
+			*,
+			record_project (
+				project_id,
+				project:project_id (
+					id,
+					title
+				)
+			),
+			file (*),
+			website (*)
+		`
+		)
+		.eq("id", id)
+		.single();
+
+	if (error) {
+		if (error.code === "PGRST116") {
+			// Not found
+			return null;
+		}
+		throw error;
+	}
+
+	return {
+		...record,
+		projects:
+			record.record_project?.map((rp) => rp.project).filter(Boolean) || [],
+		file: record.file?.[0] || undefined,
+		website: record.website?.[0] || undefined,
+	};
+}
+
+/**
+ * Update a record
+ */
+export async function updateRecord(
+	supabase: SupabaseClient,
+	id: string,
+	data: UpdateRecordData
+): Promise<RecordWithProjects> {
+	// Update the record content if provided
+	if (data.content !== undefined) {
+		const { error } = await supabase
+			.from("record")
+			.update({ content: data.content })
+			.eq("id", id)
+			.select()
+			.single();
+
+		if (error) {
+			throw error;
+		}
+	}
+
+	// Update project associations if provided
+	if (data.projectIds !== undefined) {
+		// First, delete all existing associations
+		const { error: deleteError } = await supabase
+			.from("record_project")
+			.delete()
+			.eq("record_id", id);
+
+		if (deleteError) {
+			throw deleteError;
+		}
+
+		// Then create new associations if project IDs are provided
+		if (data.projectIds.length > 0) {
+			const recordProjectInserts = data.projectIds.map((projectId) => ({
+				record_id: id,
+				project_id: projectId,
+			}));
+
+			const { error: insertError } = await supabase
+				.from("record_project")
+				.insert(recordProjectInserts);
+
+			if (insertError) {
+				throw insertError;
+			}
+		}
+	}
+
+	// Return the updated record with projects
+	return getRecord(supabase, id) as Promise<RecordWithProjects>;
+}
+
+/**
+ * Delete a record
+ */
+export async function deleteRecord(
+	supabase: SupabaseClient,
+	id: string
+): Promise<void> {
+	const { error } = await supabase.from("record").delete().eq("id", id);
+
+	if (error) {
+		throw error;
+	}
+}

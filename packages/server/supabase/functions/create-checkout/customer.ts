@@ -1,5 +1,5 @@
-import { getServiceClient, getStripeClient, logger } from "~/library";
-import { ServiceError } from "@m/shared";
+import { getServiceClient, getStripeClient, logger } from "@/lib";
+import { ServiceError } from "@milestone/shared";
 
 /**
  * Ensure Stripe customer exists for user

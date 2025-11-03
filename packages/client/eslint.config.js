@@ -1,8 +1,8 @@
-import rootConfig from "../../eslint.config.js";
-import globals from "globals";
-import tseslint from "typescript-eslint";
 import eslintReact from "@eslint-react/eslint-plugin";
 import reactHooks from "eslint-plugin-react-hooks";
+import globals from "globals";
+import tseslint from "typescript-eslint";
+import rootConfig from "../../eslint.config.js";
 
 export default tseslint.config(
 	...rootConfig,

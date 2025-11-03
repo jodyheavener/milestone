@@ -45,7 +45,7 @@
 		],
 		"tsBuildInfoFile": "./tsconfig.tsbuildinfo",
 		"paths": {
-			"~/*": [
+			"@/*": [
 				"./app/*"
 			]
 		}

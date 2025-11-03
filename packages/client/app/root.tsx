@@ -1,11 +1,12 @@
-import "~/app.css";
-import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
-import { ErrorContent, getErrorContent } from "~/features/errors";
-import type { Route } from "./+types/root";
-import { AppWrapper } from "~/library/app-wrapper";
-import { makeServerClient, AuthContext } from "~/library/supabase";
-import { ThemeProvider } from "./library/theme";
+import "@/app.css";
 import { isAuthError, type User } from "@supabase/supabase-js";
+import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
+import { getErrorContent } from "@/lib/errors";
+import { AuthContext, makeServerClient } from "@/lib/supabase";
+import { AppProviders } from "@/ui/AppProviders";
+import { ErrorContent } from "@/ui/Composite/ErrorContent";
+import { ThemeProvider } from "@/ui/ThemeProvider";
+import type { Route } from "./+types/root";
 
 export const links: Route.LinksFunction = () => [
 	{
@@ -81,9 +82,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function Root({ loaderData: { user } }: Route.ComponentProps) {
 	return (
-		<AppWrapper user={user}>
+		<AppProviders user={user}>
 			<Outlet />
-		</AppWrapper>
+		</AppProviders>
 	);
 }
 

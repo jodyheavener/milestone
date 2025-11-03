@@ -1,4 +1,4 @@
-import { getServiceClient, logger } from "~/library";
+import { getServiceClient, logger } from "@/lib";
 import type Stripe from "stripe";
 import { updateEntitlementsFromSubscription } from "./entitlements.ts";
 

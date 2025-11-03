@@ -1,7 +1,7 @@
 import { createPath, href, Outlet, redirect } from "react-router";
+import { isLoggedIn } from "@/lib/supabase";
+import { HeaderAuthenticated } from "@/ui/Composite/HeaderAuthenticated";
 import type { Route } from "./+types/authenticated";
-import { isLoggedIn } from "~/library/supabase";
-import { HeaderAuthenticated } from "~/features/site-header";
 
 export const middleware: Route.MiddlewareFunction[] = [
 	async ({ request, context }) => {

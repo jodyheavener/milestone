@@ -1,5 +1,5 @@
 import "@supabase/functions-js";
-import { handleRequest, Hono, json, logger } from "~/library";
+import { handleRequest, Hono, json, logger } from "@/lib";
 import { cleanup } from "./cleanup.ts";
 
 const app = new Hono();

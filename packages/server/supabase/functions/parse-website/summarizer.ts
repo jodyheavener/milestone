@@ -1,4 +1,4 @@
-import { getOpenaiClient, logger } from "~/library";
+import { getOpenaiClient, logger } from "@/lib";
 
 /**
  * Generates a concise summary of extracted web page content using OpenAI

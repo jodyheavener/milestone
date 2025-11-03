@@ -1,26 +1,25 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../db-types";
-import { createSearchConfig, type SearchConfigOptions } from "./search-config";
 import {
-	processContentForSearch,
-	type EmbeddingProvider,
 	type ChunkingOptions,
+	type EmbeddingProvider,
+	processContentForSearch,
 	type SourceType,
 } from "./content-processing";
 import {
-	type SearchResult,
-	type RecordSearchResult,
-	type ConversationSearchQuery,
-	embeddingToVector,
-} from "./search-functions";
-
-import {
-	ConversationSearchService,
+	type ConversationSearchService,
 	createConversationSearchService,
 } from "./conversation-search";
+import { createSearchConfig, type SearchConfigOptions } from "./search-config";
+import {
+	type ConversationSearchQuery,
+	embeddingToVector,
+	type RecordSearchResult,
+	type SearchResult,
+} from "./search-functions";
 
 // Re-export types for external use
-export type { EmbeddingProvider, ConversationSearchQuery };
+export type { ConversationSearchQuery, EmbeddingProvider };
 
 export class AISearchService {
 	private conversationSearch: ConversationSearchService;

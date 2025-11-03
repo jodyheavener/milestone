@@ -1,13 +1,13 @@
 import "@supabase/functions-js";
 import {
-	env,
+	config,
 	handleRequest,
 	Hono,
 	isEnv,
 	json,
 	logger,
 	withCORS,
-} from "~/library";
+} from "@/lib";
 
 const app = new Hono();
 
@@ -38,13 +38,13 @@ app.get(
 		}
 
 		logger.info("Health check", {
-			environment: env("APP_ENV"),
+			environment: config("APP_ENV"),
 		});
 
 		return json({
 			status: "healthy",
 			timestamp: new Date().toISOString(),
-			environment: env("APP_ENV"),
+			environment: config("APP_ENV"),
 			requestId,
 		});
 	}),
@@ -58,7 +58,7 @@ function verifyHealthCheckSecret(
 	}
 
 	return (
-		!!healthCheckSecret && healthCheckSecret === env("HEALTH_CHECK_SECRET")
+		!!healthCheckSecret && healthCheckSecret === config("HEALTH_CHECK_SECRET")
 	);
 }
 

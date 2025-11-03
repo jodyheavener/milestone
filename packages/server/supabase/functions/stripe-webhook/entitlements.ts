@@ -1,4 +1,4 @@
-import { getServiceClient, logger } from "~/library";
+import { getServiceClient, logger } from "@/lib";
 
 /**
  * Update user entitlements based on subscription items

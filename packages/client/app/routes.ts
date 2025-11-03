@@ -8,42 +8,42 @@ import {
 
 const routes: RouteConfig = [
 	layout("./layouts/application.tsx", [
-		index("./routes/home.tsx"),
-		route("pricing", "./routes/pricing.tsx"),
+		index("./modules/home/routes/home.tsx"),
+		route("pricing", "./modules/pricing/routes/pricing.tsx"),
 
 		layout("./layouts/unauthenticated.tsx", [
-			route("login", "./routes/authentication/login.tsx"),
-			route("register", "./routes/authentication/register.tsx"),
+			route("login", "./modules/auth/routes/login.tsx"),
+			route("register", "./modules/auth/routes/register.tsx"),
 		]),
 	]),
 
 	layout("./layouts/authenticated.tsx", [
 		...prefix("projects", [
-			index("./routes/projects/list.tsx"),
-			route("new", "./routes/projects/new.tsx"),
-			route(":id", "./routes/projects/view.tsx"),
-			route(":id/edit", "./routes/projects/edit.tsx"),
+			index("./modules/projects/routes/list.tsx"),
+			route("new", "./modules/projects/routes/new.tsx"),
+			route(":id", "./modules/projects/routes/view.tsx"),
+			route(":id/edit", "./modules/projects/routes/edit.tsx"),
 		]),
 
 		...prefix("records", [
-			index("./routes/records/list.tsx"),
-			route("new", "./routes/records/new.tsx"),
-			route(":id", "./routes/records/view.tsx"),
-			route(":id/edit", "./routes/records/edit.tsx"),
+			index("./modules/records/routes/list.tsx"),
+			route("new", "./modules/records/routes/new.tsx"),
+			route(":id", "./modules/records/routes/view.tsx"),
+			route(":id/edit", "./modules/records/routes/edit.tsx"),
 		]),
 
 		...prefix("tasks", [
-			index("./routes/tasks/list.tsx"),
-			route("new", "./routes/tasks/new.tsx"),
-			route(":id", "./routes/tasks/view.tsx"),
-			route(":id/edit", "./routes/tasks/edit.tsx"),
+			index("./modules/tasks/routes/list.tsx"),
+			route("new", "./modules/tasks/routes/new.tsx"),
+			route(":id", "./modules/tasks/routes/view.tsx"),
+			route(":id/edit", "./modules/tasks/routes/edit.tsx"),
 		]),
 
 		...prefix("account", [
-			index("./routes/account/account.tsx"),
-			route("profile", "./routes/account/profile.tsx"),
-			route("billing", "./routes/account/billing.tsx"),
-			route("delete", "./routes/account/delete.tsx"),
+			index("./modules/account/routes/account.tsx"),
+			route("profile", "./modules/account/routes/profile.tsx"),
+			route("billing", "./modules/account/routes/billing.tsx"),
+			route("delete", "./modules/account/routes/delete.tsx"),
 		]),
 	]),
 ];

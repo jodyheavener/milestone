@@ -1,5 +1,5 @@
 import { parse } from "@std/csv";
-import { logger } from "~/library";
+import { logger } from "@/lib";
 import { normalizeText } from "./utils.ts";
 
 export function extractTextFromCSV(fileBuffer: Uint8Array): string {

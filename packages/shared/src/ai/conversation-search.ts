@@ -1,10 +1,10 @@
-import type {
-	SearchResult,
-	ConversationSearchResult,
-	ConversationSearchQuery,
-	SearchOptions,
-} from "./search-functions";
 import type { EmbeddingProvider } from "./content-processing";
+import type {
+	ConversationSearchQuery,
+	ConversationSearchResult,
+	SearchOptions,
+	SearchResult,
+} from "./search-functions";
 
 /**
  * Conversation-informed search that understands context and generates intelligent responses

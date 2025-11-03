@@ -1,4 +1,4 @@
-include ../../make/common.mk
+include ../../dev/common.mk
 
 .DEFAULT_GOAL := help
 

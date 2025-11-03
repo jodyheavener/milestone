@@ -1,4 +1,4 @@
-import { getOpenaiClient, logger } from "~/library";
+import { getOpenaiClient, logger } from "@/lib";
 import { normalizeText, uint8ArrayToBase64 } from "./utils.ts";
 
 export interface ImageExtractionResult {

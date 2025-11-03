@@ -1,10 +1,10 @@
 {
 	"imports": {
-		"@m/shared": "../../../shared/src/index-deno.ts",
+		"@milestone/shared": "../../../shared/src/index-deno.ts",
 		"@std/csv": "jsr:@std/csv@^1",
 		"@supabase/functions-js": "jsr:@supabase/functions-js@2/edge-runtime.d.ts",
 		"@supabase/supabase-js": "jsr:@supabase/supabase-js@2.50.0",
-		"~/library": "./_library/index.ts",
+		"@/lib": "./_lib/index.ts",
 		"hono": "npm:hono@^4",
 		"jose": "npm:jose@^5",
 		"openai": "npm:openai@^4",

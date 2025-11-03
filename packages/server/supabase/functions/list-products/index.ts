@@ -6,8 +6,8 @@ import {
 	json,
 	logger,
 	withCORS,
-} from "~/library";
-import { ServiceError } from "@m/shared";
+} from "@/lib";
+import { ServiceError } from "@milestone/shared";
 import { formatProducts } from "./formatters.ts";
 
 const app = new Hono();

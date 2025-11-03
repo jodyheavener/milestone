@@ -1,5 +1,5 @@
 import { extractText } from "unpdf";
-import { logger } from "~/library";
+import { logger } from "@/lib";
 import { normalizeText } from "./utils.ts";
 
 /**

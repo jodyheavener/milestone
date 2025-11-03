@@ -1,6 +1,6 @@
 import "@supabase/functions-js";
 import {
-	env,
+	config,
 	getAuthHeader,
 	getStripeClient,
 	getUserClient,
@@ -10,8 +10,8 @@ import {
 	json,
 	logger,
 	withCORS,
-} from "~/library";
-import { ServiceError } from "@m/shared";
+} from "@/lib";
+import { ServiceError } from "@milestone/shared";
 import { validateStripeCustomer } from "./customer.ts";
 
 const app = new Hono();
@@ -38,7 +38,7 @@ app.post(
 		const stripeCustomerId = await validateStripeCustomer(user.id);
 
 		// Create billing portal session
-		const appUrl = env("APP_URL");
+		const appUrl = config("APP_URL");
 		if (!appUrl) {
 			throw new ServiceError("INTERNAL_ERROR", {
 				debugInfo: "APP_URL is not configured",
