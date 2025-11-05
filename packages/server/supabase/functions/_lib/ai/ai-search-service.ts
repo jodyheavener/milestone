@@ -1,5 +1,6 @@
 import type { Database } from "@milestone/shared";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { logger } from "../logger.ts";
 import {
 	type ChunkingOptions,
 	type EmbeddingProvider,
@@ -20,7 +21,6 @@ import {
 	type RecordSearchResult,
 	type SearchResult,
 } from "./search-functions.ts";
-import { logger } from "../logger.ts";
 
 // Re-export types for external use
 export type { ConversationSearchQuery, EmbeddingProvider };

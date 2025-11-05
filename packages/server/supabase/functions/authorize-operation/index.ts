@@ -86,7 +86,7 @@ app.post(
 			remaining: result.remaining ?? null,
 			requestId,
 		});
-	})
+	}),
 );
 
 export default {

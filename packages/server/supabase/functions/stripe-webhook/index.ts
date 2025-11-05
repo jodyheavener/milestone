@@ -1,9 +1,9 @@
 import "@supabase/functions-js";
+import { ServiceError } from "@milestone/shared";
+import type Stripe from "stripe";
 import { Hono } from "@/lib";
 import { isEnv, logger, verifyWebhookSignature } from "@/lib";
 import { handleRequest, json } from "@/lib";
-import { ServiceError } from "@milestone/shared";
-import type Stripe from "stripe";
 import {
 	handleCheckoutSessionCompleted,
 	handleCustomerDeleted,

@@ -1,7 +1,7 @@
 import "@supabase/functions-js";
+import { ServiceError } from "@milestone/shared";
 import { Hono, isEnv, verifySyncSecret, z } from "@/lib";
 import { handleRequest, json, logger } from "@/lib";
-import { ServiceError } from "@milestone/shared";
 import { fetchAllStripeProducts, syncProduct } from "./sync.ts";
 
 const app = new Hono();

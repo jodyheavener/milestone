@@ -16,14 +16,14 @@
 	],
 	"scripts": {
 		"build": "tsc --build",
+		"clean/build": "rm -rf dist tsconfig.tsbuildinfo",
+		"clean/deps": "rm -rf node_modules",
 		"dev": "tsc --build --watch",
-		"lint/check": "eslint src",
-		"lint/fix": "eslint src --fix",
 		"format/check": "prettier --check src",
 		"format/fix": "prettier --write src",
-		"lint/types": "tsc --noEmit",
-		"clean/build": "rm -rf dist tsconfig.tsbuildinfo",
-		"clean/deps": "rm -rf node_modules"
+		"lint/check": "eslint src",
+		"lint/fix": "eslint src --fix",
+		"lint/types": "tsc --noEmit"
 	},
 	"devDependencies": {
 		"typescript": "~5.9.3"

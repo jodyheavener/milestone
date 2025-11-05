@@ -1,4 +1,5 @@
 import "@supabase/functions-js";
+import { ServiceError } from "@milestone/shared";
 import {
 	getServiceClient,
 	handleRequest,
@@ -8,7 +9,6 @@ import {
 	withCORS,
 } from "@/lib";
 import { formatProducts } from "./formatters.ts";
-import { ServiceError } from "@milestone/shared";
 
 const app = new Hono();
 

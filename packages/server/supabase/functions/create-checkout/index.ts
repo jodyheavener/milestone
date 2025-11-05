@@ -1,10 +1,10 @@
 import "@supabase/functions-js";
+import { ServiceError } from "@milestone/shared";
 import { Hono, z } from "@/lib";
 import { getUserClient } from "@/lib";
 import { getAuthHeader, getUserOrThrow } from "@/lib";
 import { handleRequest, json, logger, withCORS } from "@/lib";
 import { config, getStripeClient } from "@/lib";
-import { ServiceError } from "@milestone/shared";
 import { ensureStripeCustomer } from "./customer.ts";
 import { resolvePriceIds } from "./prices.ts";
 

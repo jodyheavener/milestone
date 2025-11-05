@@ -1,4 +1,5 @@
 import "@supabase/functions-js";
+import { ServiceError } from "@milestone/shared";
 import {
 	config,
 	getAuthHeader,
@@ -11,7 +12,6 @@ import {
 	logger,
 	withCORS,
 } from "@/lib";
-import { ServiceError } from "@milestone/shared";
 import { validateStripeCustomer } from "./customer.ts";
 
 const app = new Hono();

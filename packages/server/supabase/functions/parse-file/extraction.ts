@@ -1,8 +1,8 @@
-import { getServiceClient } from "@/lib";
 import { ServiceError } from "@milestone/shared";
-import { extractTextFromPDF } from "./pdf-parser.ts";
-import { extractTextFromImage } from "./image-parser.ts";
+import { getServiceClient } from "@/lib";
 import { extractTextFromCSV } from "./csv-parser.ts";
+import { extractTextFromImage } from "./image-parser.ts";
+import { extractTextFromPDF } from "./pdf-parser.ts";
 
 type ExtractionResult = {
 	text: string;

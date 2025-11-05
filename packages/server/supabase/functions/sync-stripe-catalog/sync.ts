@@ -1,5 +1,5 @@
-import { getServiceClient, getStripeClient, logger } from "@/lib";
 import type Stripe from "stripe";
+import { getServiceClient, getStripeClient, logger } from "@/lib";
 
 /**
  * Sync a single product and its prices to the database

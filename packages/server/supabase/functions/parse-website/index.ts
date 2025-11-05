@@ -1,12 +1,12 @@
 import "@supabase/functions-js";
+import { ServiceError } from "@milestone/shared";
 import { Hono, z } from "@/lib";
 import { getUserClient } from "@/lib";
 import { getAuthHeader, getUserOrThrow } from "@/lib";
 import { handleRequest, json, logger, withCORS } from "@/lib";
-import { ServiceError } from "@milestone/shared";
-import { extractPage } from "./website-parser.ts";
 import { generateWebsiteSummary } from "./summarizer.ts";
 import { validateUrl } from "./validation.ts";
+import { extractPage } from "./website-parser.ts";
 
 const app = new Hono();
 
