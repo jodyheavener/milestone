@@ -19,42 +19,42 @@ export async function ensureStripeCustomer(
 		.eq("user_id", userId)
 		.single();
 
-		if (customerError || !existingCustomer) {
-			logger.info("Creating new Stripe customer", { userId });
-			// Create new Stripe customer
-			const customer = await stripeClient.customers.create({
-				email: userEmail,
-				metadata: {
-					user_id: userId,
-				},
+	if (customerError || !existingCustomer) {
+		logger.info("Creating new Stripe customer", { userId });
+		// Create new Stripe customer
+		const customer = await stripeClient.customers.create({
+			email: userEmail,
+			metadata: {
+				user_id: userId,
+			},
+		});
+
+		// Store in database
+		const { error: insertError } = await sbServiceClient
+			.from("billing_customers")
+			.insert({
+				user_id: userId,
+				stripe_customer_id: customer.id,
 			});
 
-			// Store in database
-			const { error: insertError } = await sbServiceClient
-				.from("billing_customers")
-				.insert({
-					user_id: userId,
-					stripe_customer_id: customer.id,
-				});
-
-			if (insertError) {
-				logger.error("Failed to store customer", {
-					userId,
-					customerId: customer.id,
-					error: insertError.message,
-				});
-				throw new ServiceError("INTERNAL_ERROR", {
-					debugInfo: `Failed to store customer: ${insertError.message}`,
-				});
-			}
-
-			logger.info("Stripe customer created", {
+		if (insertError) {
+			logger.error("Failed to store customer", {
 				userId,
 				customerId: customer.id,
+				error: insertError.message,
 			});
-
-			return customer.id;
+			throw new ServiceError("INTERNAL_ERROR", {
+				debugInfo: `Failed to store customer: ${insertError.message}`,
+			});
 		}
+
+		logger.info("Stripe customer created", {
+			userId,
+			customerId: customer.id,
+		});
+
+		return customer.id;
+	}
 
 	// Validate that the customer still exists in Stripe
 	try {

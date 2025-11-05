@@ -12,7 +12,7 @@ interface GenerateTitleOptions {
  * Can use assistant response or project goal to generate more contextual titles
  */
 export async function generateConversationTitle(
-	options: GenerateTitleOptions
+	options: GenerateTitleOptions,
 ): Promise<string | null> {
 	const {
 		userMessage,
@@ -27,7 +27,9 @@ export async function generateConversationTitle(
 		// Build system prompt
 		let systemPrompt =
 			"You are a helpful assistant that generates concise, descriptive titles for conversations. Generate a title that captures the main topic or question from the conversation. ";
-		systemPrompt += `The title should be ${Math.max(3, Math.floor(maxLength / 10))}-${Math.max(6, Math.floor(maxLength / 8))} words maximum.`;
+		systemPrompt += `The title should be ${
+			Math.max(3, Math.floor(maxLength / 10))
+		}-${Math.max(6, Math.floor(maxLength / 8))} words maximum.`;
 
 		// Build user content
 		let userContent = "";

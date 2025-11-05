@@ -32,7 +32,7 @@ app.options("*", () => new Response(null, { status: 204 }));
  */
 async function getProjectContext(
 	sbServiceClient: ReturnType<typeof getServiceClient>,
-	projectId: string
+	projectId: string,
 ): Promise<
 	Array<{
 		content: string;
@@ -70,7 +70,7 @@ async function getProjectContext(
 			website (
 				extracted_content
 			)
-		`
+		`,
 		)
 		.in("id", recordIds);
 
@@ -99,7 +99,7 @@ function buildContextString(
 		file?: { extracted_text: string | null };
 		website?: { extracted_content: string | null };
 	}>,
-	projectGoal: string
+	projectGoal: string,
 ): string {
 	let context = `Project Goal: ${projectGoal}\n\n`;
 	context += "Available Context from Records:\n\n";
@@ -109,17 +109,21 @@ function buildContextString(
 		context += `Content: ${record.content}\n`;
 
 		if (record.file?.extracted_text) {
-			context += `File Content: ${record.file.extracted_text.substring(
-				0,
-				2000
-			)}\n`;
+			context += `File Content: ${
+				record.file.extracted_text.substring(
+					0,
+					2000,
+				)
+			}\n`;
 		}
 
 		if (record.website?.extracted_content) {
-			context += `Website Content: ${record.website.extracted_content.substring(
-				0,
-				2000
-			)}\n`;
+			context += `Website Content: ${
+				record.website.extracted_content.substring(
+					0,
+					2000,
+				)
+			}\n`;
 		}
 
 		context += "\n---\n\n";
@@ -133,7 +137,7 @@ function buildContextString(
  */
 async function generateConversationTitle(
 	firstMessage: string,
-	projectGoal: string
+	projectGoal: string,
 ): Promise<string> {
 	try {
 		const client = getOpenaiClient();
@@ -147,15 +151,16 @@ async function generateConversationTitle(
 				},
 				{
 					role: "user",
-					content: `Project Goal: ${projectGoal}\n\nFirst Message: ${firstMessage}\n\nGenerate a concise title for this conversation.`,
+					content:
+						`Project Goal: ${projectGoal}\n\nFirst Message: ${firstMessage}\n\nGenerate a concise title for this conversation.`,
 				},
 			],
 			max_tokens: 50,
 			temperature: 0.7,
 		});
 
-		const title =
-			response.choices[0]?.message?.content?.trim() || "New Conversation";
+		const title = response.choices[0]?.message?.content?.trim() ||
+			"New Conversation";
 		return title.length > 50 ? title.substring(0, 50) : title;
 	} catch (error) {
 		logger.error("Error generating conversation title", { error });
@@ -317,7 +322,7 @@ app.post(
 					{
 						p_user_id: user.id,
 						p_op_type: "agentic_request",
-					}
+					},
 				);
 
 				if (authError || !authData) {
@@ -400,18 +405,19 @@ app.post(
 						error: entriesError.message,
 					});
 					throw new ServiceError("INTERNAL_ERROR", {
-						debugInfo: `Failed to fetch conversation history: ${entriesError.message}`,
+						debugInfo:
+							`Failed to fetch conversation history: ${entriesError.message}`,
 					});
 				}
 
 				// Get project context (records with files and websites)
 				const projectRecords = await getProjectContext(
 					sbServiceClient,
-					conversation.project_id
+					conversation.project_id,
 				);
 				const contextString = buildContextString(
 					projectRecords,
-					project.goal || ""
+					project.goal || "",
 				);
 
 				// Create user message entry
@@ -440,7 +446,8 @@ app.post(
 				const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
 					{
 						role: "system",
-						content: `You are a helpful AI assistant helping the user work towards their project goal. Use the provided context from their records, files, and websites to provide informed, relevant responses.
+						content:
+							`You are a helpful AI assistant helping the user work towards their project goal. Use the provided context from their records, files, and websites to provide informed, relevant responses.
 
 Project Goal: ${project.goal || "Not specified"}
 
@@ -482,17 +489,15 @@ Guidelines:
 						max_tokens: 2000,
 					});
 
-					assistantResponse =
-						response.choices[0]?.message?.content ||
+					assistantResponse = response.choices[0]?.message?.content ||
 						"I apologize, but I couldn't generate a response.";
 				} catch (error) {
 					logger.error("OpenAI API error", {
 						userId: user.id,
 						conversationId: input.conversationId,
-						error:
-							error instanceof Error
-								? { message: error.message, stack: error.stack }
-								: String(error),
+						error: error instanceof Error
+							? { message: error.message, stack: error.stack }
+							: String(error),
 					});
 					assistantResponse =
 						"I apologize, but I encountered an error while generating a response. Please try again.";
@@ -517,7 +522,8 @@ Guidelines:
 						error: assistantEntryError.message,
 					});
 					throw new ServiceError("INTERNAL_ERROR", {
-						debugInfo: `Failed to create assistant entry: ${assistantEntryError.message}`,
+						debugInfo:
+							`Failed to create assistant entry: ${assistantEntryError.message}`,
 					});
 				}
 
@@ -525,7 +531,7 @@ Guidelines:
 				if (!conversation.title && entries && entries.length === 0) {
 					const title = await generateConversationTitle(
 						input.message,
-						project.goal || ""
+						project.goal || "",
 					);
 					await sbUserClient
 						.from("conversation")
@@ -617,7 +623,7 @@ Guidelines:
 					if (firstEntry) {
 						title = await generateConversationTitle(
 							firstEntry.content,
-							project.goal || ""
+							project.goal || "",
 						);
 					} else {
 						title = "New Conversation";
@@ -736,7 +742,7 @@ Guidelines:
 					debugInfo: `Unknown action: ${input.action}`,
 				});
 		}
-	})
+	}),
 );
 
 export default {

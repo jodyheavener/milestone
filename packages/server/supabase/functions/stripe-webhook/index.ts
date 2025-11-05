@@ -107,7 +107,10 @@ app.post(
 					break;
 				}
 				case "price.updated": {
-					await handlePriceUpdated(event.data.object as Stripe.Price, requestId);
+					await handlePriceUpdated(
+						event.data.object as Stripe.Price,
+						requestId,
+					);
 					break;
 				}
 				case "customer.deleted": {
