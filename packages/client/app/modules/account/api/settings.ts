@@ -1,8 +1,5 @@
 import { makeBrowserClient } from "@/lib/supabase";
-import type {
-	EmailUpdateData,
-	PasswordUpdateData,
-} from "../model/types";
+import type { EmailUpdateData, PasswordUpdateData } from "../model/types";
 
 export async function updateEmail(data: EmailUpdateData): Promise<void> {
 	const supabase = makeBrowserClient();

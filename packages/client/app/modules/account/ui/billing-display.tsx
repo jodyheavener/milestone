@@ -1,10 +1,6 @@
 import { Link } from "react-router";
-import type {
-	Entitlements,
-	Subscription,
-	UsageCounters,
-} from "../model/types";
-import { calculateUsagePercent, formatDate } from "../lib/formatters";
+import { calculateUsagePercent, formatDate } from "@/lib/formatters";
+import type { Entitlements, Subscription, UsageCounters } from "../model/types";
 
 interface BillingDisplayProps {
 	subscription: Subscription | null;

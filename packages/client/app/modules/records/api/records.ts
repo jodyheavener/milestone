@@ -3,7 +3,6 @@ import type { SupabaseClient } from "@/lib/supabase";
 import type {
 	CreateRecordData,
 	Record,
-	RecordUpdate,
 	RecordWithProjects,
 	UpdateRecordData,
 } from "../model/types";

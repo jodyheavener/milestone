@@ -1,10 +1,6 @@
 import type { SupabaseClient } from "@/lib/supabase";
 import { makeBrowserClient } from "@/lib/supabase";
-import type {
-	Profile,
-	ProfileUpdate,
-	UpdateProfileData,
-} from "../model/types";
+import type { Profile, ProfileUpdate, UpdateProfileData } from "../model/types";
 
 export async function getProfile(
 	supabase: SupabaseClient,
