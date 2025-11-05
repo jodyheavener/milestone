@@ -1,6 +1,6 @@
+import { ServiceError } from "@milestone/shared";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { User } from "@supabase/supabase-js";
-import { ServiceError } from "@milestone/shared";
 import type { Database } from "./deps.ts";
 
 /**

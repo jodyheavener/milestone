@@ -1,5 +1,5 @@
-import { z } from "./deps.ts";
 import { type EnvironmentType, environmentTypes } from "@milestone/shared";
+import { z } from "./deps.ts";
 
 // Validate environment variables
 const ConfigSchema = z.object({

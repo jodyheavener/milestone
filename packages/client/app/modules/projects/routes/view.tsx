@@ -2,6 +2,8 @@ import { Form, Link, redirect } from "react-router";
 import { createPageTitle } from "@/lib";
 import { cn } from "@/lib";
 import { AuthContext } from "@/lib/supabase";
+import { getConversationsForProject } from "@/modules/conversations/api/conversations";
+import { ConversationList } from "@/modules/conversations/ui/conversation-list";
 import { getRecordsForProject } from "@/modules/records/api/records";
 import { RecordListForProject } from "@/modules/records/ui/record-list-for-project";
 import { getTasksForProject } from "@/modules/tasks/api/tasks";
@@ -11,17 +13,18 @@ import type { Route } from "./+types/view";
 
 export async function loader({ context, params }: Route.LoaderArgs) {
 	const { supabase } = context.get(AuthContext);
-	const [project, records, tasks] = await Promise.all([
+	const [project, records, tasks, conversations] = await Promise.all([
 		getProject(supabase, params.id),
 		getRecordsForProject(supabase, params.id),
 		getTasksForProject(supabase, params.id),
+		getConversationsForProject(supabase, params.id),
 	]);
 
 	if (!project) {
 		throw redirect("/projects");
 	}
 
-	return { project, records, tasks };
+	return { project, records, tasks, conversations };
 }
 
 export async function action({ request, params, context }: Route.ActionArgs) {
@@ -44,7 +47,7 @@ export function meta({ loaderData }: Route.MetaArgs) {
 }
 
 export default function Component({ loaderData }: Route.ComponentProps) {
-	const { project, records, tasks } = loaderData;
+	const { project, records, tasks, conversations } = loaderData;
 
 	return (
 		<div className="p-8">
@@ -95,6 +98,26 @@ export default function Component({ loaderData }: Route.ComponentProps) {
 					<div className="text-muted-foreground whitespace-pre-wrap">
 						{project.goal}
 					</div>
+				</div>
+
+				<div className="space-y-6">
+					<div className="flex items-center justify-between">
+						<h2 className="text-xl font-semibold">Conversations</h2>
+						<Link
+							to={`/projects/${project.id}/conversations/new`}
+							className={cn(
+								"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+								"h-9 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90"
+							)}
+						>
+							+ New Conversation
+						</Link>
+					</div>
+
+					<ConversationList
+						conversations={conversations}
+						projectId={project.id}
+					/>
 				</div>
 
 				<div className="space-y-6">

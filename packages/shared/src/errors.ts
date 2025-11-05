@@ -50,6 +50,12 @@ export const serviceErrors = {
 		message: "No content could be extracted from the website",
 		statusCode: 400,
 	},
+
+	// Chat errors
+	RATE_LIMIT_EXCEEDED: {
+		message: "The agentic request limit has been exceeded",
+		statusCode: 429,
+	},
 };
 
 export type ServiceErrorType = keyof typeof serviceErrors;

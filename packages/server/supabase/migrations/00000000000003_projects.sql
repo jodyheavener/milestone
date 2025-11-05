@@ -1,4 +1,8 @@
--- Project: project table and related functionality
+-- Projects: Project table and related functionality
+
+-- ============================================================================
+-- PROJECTS
+-- ============================================================================
 
 -- Table: project
 create table public.project (
@@ -45,3 +49,4 @@ create policy "Users can delete their own projects"
   on public.project
   for delete to authenticated
   using ((select auth.uid()) = user_id);
+

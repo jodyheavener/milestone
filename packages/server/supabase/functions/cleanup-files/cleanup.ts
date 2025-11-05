@@ -1,7 +1,7 @@
 import { ServiceError } from "@milestone/shared";
 import { getServiceClient } from "@/lib";
 import {
-	CleanupResult,
+	type CleanupResult,
 	createCleanupResult,
 	isTemporaryUserFile,
 	logError,

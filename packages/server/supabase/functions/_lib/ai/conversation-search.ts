@@ -1,25 +1,32 @@
-import type { EmbeddingProvider } from "./content-processing";
+import type { Database } from "@milestone/shared";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { EmbeddingProvider } from "./content-processing.ts";
 import type {
 	ConversationSearchQuery,
 	ConversationSearchResult,
 	SearchOptions,
 	SearchResult,
-} from "./search-functions";
+} from "./search-functions.ts";
+import {
+	DEFAULT_SEARCH_OPTIONS,
+	embeddingToVector,
+} from "./search-functions.ts";
 
 /**
  * Conversation-informed search that understands context and generates intelligent responses
  */
 export class ConversationSearchService {
 	constructor(
+		private supabase: SupabaseClient<Database>,
 		private embeddingProvider: EmbeddingProvider,
-		private embeddingModel: string
+		private embeddingModel: string,
 	) {}
 
 	/**
 	 * Perform conversation-informed search for large topic queries
 	 */
 	async searchWithConversationContext(
-		query: ConversationSearchQuery
+		query: ConversationSearchQuery,
 	): Promise<ConversationSearchResult[]> {
 		// 1. Build context-aware query
 		const contextualQuery = await this.buildContextualQuery(query);
@@ -27,7 +34,7 @@ export class ConversationSearchService {
 		// 2. Generate embedding for the contextual query
 		const queryEmbedding = await this.embeddingProvider.generateEmbedding(
 			contextualQuery,
-			this.embeddingModel
+			this.embeddingModel,
 		);
 
 		// 3. Perform vector search (this would call your database function)
@@ -45,19 +52,21 @@ export class ConversationSearchService {
 	/**
 	 * Build a context-aware query by incorporating conversation history
 	 */
-	private async buildContextualQuery(
-		query: ConversationSearchQuery
-	): Promise<string> {
+	private buildContextualQuery(query: ConversationSearchQuery): string {
 		let contextualQuery = query.topicDescription;
 
 		if (query.conversationHistory && query.conversationHistory.length > 0) {
 			// Extract key themes from conversation history
 			const conversationThemes = this.extractConversationThemes(
-				query.conversationHistory
+				query.conversationHistory,
 			);
 
 			if (conversationThemes.length > 0) {
-				contextualQuery = `${query.topicDescription}\n\nRelated context: ${conversationThemes.join(", ")}`;
+				contextualQuery = `${query.topicDescription}\n\nRelated context: ${
+					conversationThemes.join(
+						", ",
+					)
+				}`;
 			}
 		}
 
@@ -68,13 +77,13 @@ export class ConversationSearchService {
 	 * Extract key themes from conversation history
 	 */
 	private extractConversationThemes(
-		conversationHistory: Array<{ role: string; content: string }>
+		conversationHistory: Array<{ role: string; content: string }>,
 	): string[] {
 		const themes = new Set<string>();
 
 		// Focus on user messages and assistant responses
 		const relevantMessages = conversationHistory.filter(
-			(msg) => msg.role === "user" || msg.role === "assistant"
+			(msg) => msg.role === "user" || msg.role === "assistant",
 		);
 
 		relevantMessages.forEach((message) => {
@@ -95,7 +104,7 @@ export class ConversationSearchService {
 	 */
 	private enhanceResultsWithContext(
 		searchResults: SearchResult[],
-		query: ConversationSearchQuery
+		query: ConversationSearchQuery,
 	): ConversationSearchResult[] {
 		return searchResults.map((result) => ({
 			...result,
@@ -103,7 +112,7 @@ export class ConversationSearchService {
 			contextSnippets: this.extractContextSnippets(searchResults),
 			suggestedQuestions: this.generateSuggestedQuestions(
 				searchResults,
-				query.topicDescription
+				query.topicDescription,
 			),
 		}));
 	}
@@ -113,7 +122,7 @@ export class ConversationSearchService {
 	 */
 	private calculateRelevanceScore(
 		result: SearchResult,
-		query: ConversationSearchQuery
+		query: ConversationSearchQuery,
 	): number {
 		let score = result.similarity;
 
@@ -139,7 +148,7 @@ export class ConversationSearchService {
 			const snippetLength = Math.min(50, words.length);
 			const start = Math.max(
 				0,
-				Math.floor(words.length / 2) - snippetLength / 2
+				Math.floor(words.length / 2) - snippetLength / 2,
 			);
 			return words.slice(start, start + snippetLength).join(" ");
 		});
@@ -150,7 +159,7 @@ export class ConversationSearchService {
 	 */
 	private generateSuggestedQuestions(
 		searchResults: SearchResult[],
-		topicDescription: string
+		topicDescription: string,
 	): string[] {
 		const questions: string[] = [];
 
@@ -171,7 +180,7 @@ export class ConversationSearchService {
 			questions.push(`What are the key aspects of ${topicArray.join(", ")}?`);
 			questions.push(`How do these topics relate to ${topicDescription}?`);
 			questions.push(
-				`What are the main challenges or opportunities in this area?`
+				`What are the main challenges or opportunities in this area?`,
 			);
 		}
 
@@ -240,28 +249,29 @@ export class ConversationSearchService {
 	}
 
 	/**
-	 * Placeholder for actual vector search implementation
-	 * This would call your Supabase RPC function
+	 * Perform vector search using Supabase RPC function
 	 */
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	private async performVectorSearch(params: {
 		queryEmbedding: number[];
 		projectId: string;
 		sourceTypes?: string[];
 		options?: SearchOptions;
 	}): Promise<SearchResult[]> {
-		// This is a placeholder - you would implement the actual database call here
-		// Example:
-		// const { data } = await supabase.rpc('search_content_chunks', {
-		//   query_embedding: embeddingToVector(params.queryEmbedding),
-		//   project_id: params.projectId,
-		//   source_types: params.sourceTypes,
-		//   match_threshold: params.options?.matchThreshold || 0.7,
-		//   match_count: params.options?.matchCount || 10
-		// });
-		// return data || [];
+		const options = { ...DEFAULT_SEARCH_OPTIONS, ...params.options };
 
-		return []; // Placeholder return
+		const { data, error } = await this.supabase.rpc("search_content_chunks", {
+			query_embedding: embeddingToVector(params.queryEmbedding),
+			project_id: params.projectId,
+			source_types: params.sourceTypes,
+			match_threshold: options.matchThreshold,
+			match_count: options.matchCount,
+		});
+
+		if (error) {
+			throw new Error(`Vector search failed: ${error.message}`);
+		}
+
+		return (data as SearchResult[]) || [];
 	}
 }
 
@@ -269,8 +279,13 @@ export class ConversationSearchService {
  * Utility function to create a conversation search service
  */
 export function createConversationSearchService(
+	supabase: SupabaseClient<Database>,
 	embeddingProvider: EmbeddingProvider,
-	embeddingModel: string = "text-embedding-3-small"
+	embeddingModel: string = "text-embedding-3-small",
 ): ConversationSearchService {
-	return new ConversationSearchService(embeddingProvider, embeddingModel);
+	return new ConversationSearchService(
+		supabase,
+		embeddingProvider,
+		embeddingModel,
+	);
 }

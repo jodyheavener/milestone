@@ -1,7 +1,7 @@
-import { createClient } from "./deps.ts";
-import type { Database } from "./deps.ts";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { config } from "./config.ts";
+import type { Database } from "./deps.ts";
+import { createClient } from "./deps.ts";
 
 let serviceSupabaseClient: ReturnType<typeof createClient<Database>> | null =
 	null;

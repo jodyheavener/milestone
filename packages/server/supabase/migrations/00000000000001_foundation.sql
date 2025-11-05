@@ -1,4 +1,9 @@
--- Extensions and common functions used across multiple tables
+-- Foundation: Extensions and common functions
+-- This migration establishes the core infrastructure and utility functions
+
+-- ============================================================================
+-- EXTENSIONS
+-- ============================================================================
 
 -- Create a dedicated schema for extensions
 create schema if not exists extensions;
@@ -15,6 +20,10 @@ grant usage on schema extensions to authenticated;
 
 -- Grant execute on extension functions to authenticated users
 grant execute on function extensions.unaccent(text) to authenticated;
+
+-- ============================================================================
+-- COMMON FUNCTIONS
+-- ============================================================================
 
 -- Function: Update the updated_at timestamp
 create or replace function public.set_updated_at()

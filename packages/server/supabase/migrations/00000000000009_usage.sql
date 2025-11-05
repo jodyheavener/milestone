@@ -1,4 +1,8 @@
--- Billing: Entitlements and usage tracking
+-- Usage: Entitlements, usage tracking, and authorization functions
+
+-- ============================================================================
+-- ENTITLEMENTS
+-- ============================================================================
 
 -- Table: entitlements
 create table public.entitlements (
@@ -10,6 +14,10 @@ create table public.entitlements (
   created_at                  timestamptz not null default now(),
   updated_at                  timestamptz not null default now()
 );
+
+-- ============================================================================
+-- USAGE TRACKING
+-- ============================================================================
 
 -- Table: usage_counters
 create table public.usage_counters (
@@ -54,6 +62,10 @@ create trigger trg_entitlements_updated_at
 create trigger trg_usage_counters_updated_at
   before update on public.usage_counters
   for each row execute procedure public.set_updated_at();
+
+-- ============================================================================
+-- AUTHORIZATION FUNCTIONS
+-- ============================================================================
 
 -- Function: authorize_operation - atomically check entitlement and increment usage
 create or replace function public.authorize_operation(
@@ -283,3 +295,4 @@ create policy "Users can view their own usage events"
   on public.usage_events
   for select to authenticated
   using ((select auth.uid()) = user_id);
+

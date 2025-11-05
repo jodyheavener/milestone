@@ -1,4 +1,4 @@
-import type { Database } from "../db-types";
+import type { Database } from "@milestone/shared";
 
 export type ContentChunk = Database["public"]["Tables"]["content_chunk"]["Row"];
 export type ContentChunkInsert =
@@ -66,7 +66,7 @@ export async function createContentChunks(
 	text: string,
 	chunkingOptions: ChunkingOptions,
 	embeddingProvider: EmbeddingProvider,
-	embeddingModel: string
+	embeddingModel: string,
 ): Promise<ContentChunkInsert[]> {
 	const chunks = chunkText(text, chunkingOptions);
 	const chunkInserts: ContentChunkInsert[] = [];
@@ -75,7 +75,7 @@ export async function createContentChunks(
 		const chunk = chunks[i];
 		const embedding = await embeddingProvider.generateEmbedding(
 			chunk,
-			embeddingModel
+			embeddingModel,
 		);
 
 		chunkInserts.push({
@@ -100,11 +100,11 @@ export async function createRecordEmbedding(
 	projectId: string,
 	content: string,
 	embeddingProvider: EmbeddingProvider,
-	embeddingModel: string
+	embeddingModel: string,
 ): Promise<RecordEmbeddingInsert> {
 	const embedding = await embeddingProvider.generateEmbedding(
 		content,
-		embeddingModel
+		embeddingModel,
 	);
 
 	return {
@@ -125,7 +125,7 @@ export async function processContentForSearch(
 	content: string,
 	chunkingOptions: ChunkingOptions,
 	embeddingProvider: EmbeddingProvider,
-	embeddingModel: string
+	embeddingModel: string,
 ): Promise<ContentProcessingResult> {
 	const chunks = await createContentChunks(
 		sourceType,
@@ -134,7 +134,7 @@ export async function processContentForSearch(
 		content,
 		chunkingOptions,
 		embeddingProvider,
-		embeddingModel
+		embeddingModel,
 	);
 
 	const recordEmbedding = await createRecordEmbedding(
@@ -142,7 +142,7 @@ export async function processContentForSearch(
 		projectId,
 		content,
 		embeddingProvider,
-		embeddingModel
+		embeddingModel,
 	);
 
 	return {

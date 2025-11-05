@@ -28,6 +28,7 @@ build
 # Supabase
 .branches
 .temp
+deno.lock
 
 tsconfig.tsbuildinfo
 

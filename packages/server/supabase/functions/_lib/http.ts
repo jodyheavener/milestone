@@ -1,7 +1,7 @@
-import type { Context } from "hono";
 import { ServiceError } from "@milestone/shared";
-import { logger } from "./logger.ts";
+import type { Context } from "hono";
 import { config } from "./config.ts";
+import { logger } from "./logger.ts";
 
 const defaultHeaders = {
 	"Content-Type": "application/json; charset=utf-8",

@@ -1,4 +1,8 @@
--- Task: task table and related functionality
+-- Tasks: Task table and related functionality
+
+-- ============================================================================
+-- TASKS
+-- ============================================================================
 
 -- Table: task
 create table public.task (
@@ -68,3 +72,4 @@ create policy "Users can delete tasks for their own projects"
       where p.id = task.project_id and p.user_id = (select auth.uid())
     )
   );
+

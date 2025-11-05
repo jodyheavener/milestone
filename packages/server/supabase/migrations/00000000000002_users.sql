@@ -1,5 +1,8 @@
--- Core Entities: profile
--- These form the foundation of the milestone system
+-- Users: User profiles and related functionality
+
+-- ============================================================================
+-- USER PROFILE
+-- ============================================================================
 
 -- Table: profile
 create table public.profile (
@@ -114,3 +117,4 @@ $$;
 
 -- Grant execute permission on the delete_user function
 grant execute on function public.delete_user() to authenticated;
+

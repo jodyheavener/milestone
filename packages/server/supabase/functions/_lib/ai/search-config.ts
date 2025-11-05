@@ -1,4 +1,4 @@
-import type { Database, Json } from "../db-types";
+import type { Database, Json } from "@milestone/shared";
 
 export type SearchConfig = Database["public"]["Tables"]["search_config"]["Row"];
 export type SearchConfigInsert =
@@ -26,12 +26,12 @@ export const DEFAULT_SEARCH_CONFIG: Required<SearchConfigOptions> = {
 
 export function createSearchConfig(
 	projectId: string,
-	options: SearchConfigOptions = {}
+	options: SearchConfigOptions = {},
 ): SearchConfigInsert {
 	return {
 		project_id: projectId,
-		embedding_model:
-			options.embeddingModel ?? DEFAULT_SEARCH_CONFIG.embeddingModel,
+		embedding_model: options.embeddingModel ??
+			DEFAULT_SEARCH_CONFIG.embeddingModel,
 		embedding_dim: options.embeddingDim ?? DEFAULT_SEARCH_CONFIG.embeddingDim,
 		chunk_size: options.chunkSize ?? DEFAULT_SEARCH_CONFIG.chunkSize,
 		chunk_overlap: options.chunkOverlap ?? DEFAULT_SEARCH_CONFIG.chunkOverlap,

@@ -23,6 +23,11 @@ const routes: RouteConfig = [
 			route("new", "./modules/projects/routes/new.tsx"),
 			route(":id", "./modules/projects/routes/view.tsx"),
 			route(":id/edit", "./modules/projects/routes/edit.tsx"),
+
+			...prefix(":projectId/conversations", [
+				route("new", "./modules/conversations/routes/new.tsx"),
+				route(":conversationId", "./modules/conversations/routes/view.tsx"),
+			]),
 		]),
 
 		...prefix("records", [

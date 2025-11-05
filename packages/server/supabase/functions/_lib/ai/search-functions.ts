@@ -1,4 +1,4 @@
-import type { Json } from "../db-types";
+import type { Json } from "@milestone/shared";
 
 export type SearchResult = {
 	id: string;
@@ -117,7 +117,7 @@ export function cosineSimilarity(a: number[], b: number[]): number {
  */
 export function generateSuggestedQuestions(
 	searchResults: SearchResult[],
-	topicDescription: string
+	topicDescription: string,
 ): string[] {
 	const questions: string[] = [];
 
@@ -135,11 +135,13 @@ export function generateSuggestedQuestions(
 	// Generate questions based on topics and original description
 	if (topics.size > 0) {
 		questions.push(
-			`What are the key aspects of ${Array.from(topics).slice(0, 3).join(", ")}?`
+			`What are the key aspects of ${
+				Array.from(topics).slice(0, 3).join(", ")
+			}?`,
 		);
 		questions.push(`How do these topics relate to ${topicDescription}?`);
 		questions.push(
-			`What are the main challenges or opportunities in this area?`
+			`What are the main challenges or opportunities in this area?`,
 		);
 	}
 
@@ -151,7 +153,7 @@ export function generateSuggestedQuestions(
  */
 export function extractContextSnippets(
 	searchResults: SearchResult[],
-	maxSnippets: number = 3
+	maxSnippets: number = 3,
 ): string[] {
 	return searchResults.slice(0, maxSnippets).map((result) => {
 		// Extract a meaningful snippet around the most relevant part

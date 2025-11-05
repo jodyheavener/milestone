@@ -1,22 +1,26 @@
+import type { Database } from "@milestone/shared";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "../db-types";
 import {
 	type ChunkingOptions,
 	type EmbeddingProvider,
 	processContentForSearch,
 	type SourceType,
-} from "./content-processing";
+} from "./content-processing.ts";
 import {
 	type ConversationSearchService,
 	createConversationSearchService,
-} from "./conversation-search";
-import { createSearchConfig, type SearchConfigOptions } from "./search-config";
+} from "./conversation-search.ts";
+import {
+	createSearchConfig,
+	type SearchConfigOptions,
+} from "./search-config.ts";
 import {
 	type ConversationSearchQuery,
 	embeddingToVector,
 	type RecordSearchResult,
 	type SearchResult,
-} from "./search-functions";
+} from "./search-functions.ts";
+import { logger } from "../logger.ts";
 
 // Re-export types for external use
 export type { ConversationSearchQuery, EmbeddingProvider };
@@ -27,11 +31,12 @@ export class AISearchService {
 	constructor(
 		private supabase: SupabaseClient<Database>,
 		private embeddingProvider: EmbeddingProvider,
-		private embeddingModel: string = "text-embedding-3-small"
+		private embeddingModel: string = "text-embedding-3-small",
 	) {
 		this.conversationSearch = createConversationSearchService(
+			supabase,
 			embeddingProvider,
-			embeddingModel
+			embeddingModel,
 		);
 	}
 
@@ -40,7 +45,7 @@ export class AISearchService {
 	 */
 	async initializeSearchConfig(
 		projectId: string,
-		options: SearchConfigOptions = {}
+		options: SearchConfigOptions = {},
 	): Promise<string> {
 		const config = createSearchConfig(projectId, options);
 
@@ -83,7 +88,7 @@ export class AISearchService {
 		sourceType: SourceType,
 		sourceId: string,
 		projectId: string,
-		content: string
+		content: string,
 	): Promise<void> {
 		// Get search configuration
 		const config = await this.getSearchConfig(projectId);
@@ -104,7 +109,7 @@ export class AISearchService {
 			content,
 			chunkingOptions,
 			this.embeddingProvider,
-			config.embedding_model
+			config.embedding_model,
 		);
 
 		// Insert chunks into database
@@ -114,7 +119,7 @@ export class AISearchService {
 
 		if (chunksError) {
 			throw new Error(
-				`Failed to insert content chunks: ${chunksError.message}`
+				`Failed to insert content chunks: ${chunksError.message}`,
 			);
 		}
 
@@ -125,7 +130,7 @@ export class AISearchService {
 
 		if (embeddingError) {
 			throw new Error(
-				`Failed to insert record embedding: ${embeddingError.message}`
+				`Failed to insert record embedding: ${embeddingError.message}`,
 			);
 		}
 	}
@@ -138,28 +143,49 @@ export class AISearchService {
 		projectId: string,
 		sourceTypes?: string[],
 		matchThreshold: number = 0.7,
-		matchCount: number = 10
+		matchCount: number = 10,
 	): Promise<SearchResult[]> {
-		// Generate query embedding
-		const queryEmbedding = await this.embeddingProvider.generateEmbedding(
-			query,
-			this.embeddingModel
-		);
+		try {
+			// Generate query embedding
+			const queryEmbedding = await this.embeddingProvider.generateEmbedding(
+				query,
+				this.embeddingModel,
+			);
 
-		// Search using database function
-		const { data, error } = await this.supabase.rpc("search_content_chunks", {
-			query_embedding: embeddingToVector(queryEmbedding),
-			project_id: projectId,
-			source_types: sourceTypes,
-			match_threshold: matchThreshold,
-			match_count: matchCount,
-		});
+			// Search using database function
+			const { data, error } = await this.supabase.rpc("search_content_chunks", {
+				query_embedding: embeddingToVector(queryEmbedding),
+				project_id: projectId,
+				source_types: sourceTypes,
+				match_threshold: matchThreshold,
+				match_count: matchCount,
+			});
 
-		if (error) {
-			throw new Error(`Search failed: ${error.message}`);
+			if (error) {
+				logger.error("Database RPC search_content_chunks failed", {
+					error: {
+						message: error.message,
+						code: error.code,
+						details: error.details,
+						hint: error.hint,
+					},
+					projectId,
+					sourceTypes,
+				});
+				throw new Error(`Search failed: ${error.message}`);
+			}
+
+			return (data as SearchResult[]) || [];
+		} catch (error) {
+			logger.error("Error in searchContent", {
+				error: error instanceof Error
+					? { message: error.message, stack: error.stack }
+					: String(error),
+				projectId,
+				sourceTypes,
+			});
+			throw error;
 		}
-
-		return (data as SearchResult[]) || [];
 	}
 
 	/**
@@ -170,12 +196,12 @@ export class AISearchService {
 		projectId: string,
 		excludeRecordId?: string,
 		matchThreshold: number = 0.8,
-		matchCount: number = 5
+		matchCount: number = 5,
 	): Promise<RecordSearchResult[]> {
 		// Generate query embedding
 		const queryEmbedding = await this.embeddingProvider.generateEmbedding(
 			query,
-			this.embeddingModel
+			this.embeddingModel,
 		);
 
 		// Search using database function
@@ -197,8 +223,8 @@ export class AISearchService {
 	/**
 	 * Conversation-informed search for large topic queries
 	 */
-	async searchWithConversationContext(
-		query: ConversationSearchQuery
+	searchWithConversationContext(
+		query: ConversationSearchQuery,
 	): Promise<SearchResult[]> {
 		return this.conversationSearch.searchWithConversationContext(query);
 	}
@@ -213,7 +239,7 @@ export class AISearchService {
 		matchThreshold: number = 0.7,
 		matchCount: number = 10,
 		textWeight: number = 0.3,
-		vectorWeight: number = 0.7
+		vectorWeight: number = 0.7,
 	): Promise<SearchResult[]> {
 		const { data, error } = await this.supabase.rpc("search_content_hybrid", {
 			query_text: query,
@@ -237,7 +263,7 @@ export class AISearchService {
 	 */
 	async deleteContentChunks(
 		sourceType: SourceType,
-		sourceId: string
+		sourceId: string,
 	): Promise<void> {
 		const { error } = await this.supabase
 			.from("content_chunk")
@@ -271,7 +297,7 @@ export class AISearchService {
 		sourceType: SourceType,
 		sourceId: string,
 		projectId: string,
-		newContent: string
+		newContent: string,
 	): Promise<void> {
 		// Delete existing chunks and embeddings
 		await this.deleteContentChunks(sourceType, sourceId);
@@ -290,7 +316,7 @@ export class AISearchService {
 export function createAISearchService(
 	supabase: SupabaseClient<Database>,
 	embeddingProvider: EmbeddingProvider,
-	embeddingModel: string = "text-embedding-3-small"
+	embeddingModel: string = "text-embedding-3-small",
 ): AISearchService {
 	return new AISearchService(supabase, embeddingProvider, embeddingModel);
 }
