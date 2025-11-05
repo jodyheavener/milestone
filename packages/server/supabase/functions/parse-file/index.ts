@@ -46,13 +46,65 @@ app.post(
 		}
 
 		// Download file and get mime type
-		const { buffer, mimeType } = await downloadFile(input.storagePath);
+		let buffer: Uint8Array;
+		let mimeType: string;
+		try {
+			const downloadResult = await downloadFile(input.storagePath);
+			buffer = downloadResult.buffer;
+			mimeType = downloadResult.mimeType;
+		} catch (error) {
+			logger.error("Failed to download file", {
+				userId: user.id,
+				storagePath: input.storagePath,
+				error: error instanceof Error
+					? { message: error.message, stack: error.stack }
+					: String(error),
+			});
+			throw new ServiceError("INTERNAL_ERROR", {
+				debugInfo: "Failed to download file",
+			});
+		}
 
 		// Extract text based on mime type
-		const extractionResult = await extractTextFromFile(buffer, mimeType);
+		let extractionResult;
+		try {
+			extractionResult = await extractTextFromFile(buffer, mimeType);
+		} catch (error) {
+			logger.error("Failed to extract text from file", {
+				userId: user.id,
+				storagePath: input.storagePath,
+				mimeType,
+				error: error instanceof Error
+					? { message: error.message, stack: error.stack }
+					: String(error),
+			});
+			throw new ServiceError("INTERNAL_ERROR", {
+				debugInfo: "Failed to extract text from file",
+			});
+		}
 
 		// Generate summary using OpenAI
-		const summary = await generateSummary(extractionResult.text, mimeType);
+		let summary: string;
+		try {
+			summary = await generateSummary(extractionResult.text, mimeType);
+		} catch (error) {
+			logger.error("Failed to generate summary", {
+				userId: user.id,
+				storagePath: input.storagePath,
+				error: error instanceof Error
+					? { message: error.message, stack: error.stack }
+					: String(error),
+			});
+			// Continue without summary rather than failing
+			summary = "";
+		}
+
+		logger.info("File parsed successfully", {
+			userId: user.id,
+			storagePath: input.storagePath,
+			parser: extractionResult.parser,
+			textLength: extractionResult.text.length,
+		});
 
 		const response = {
 			extractedText: extractionResult.text,

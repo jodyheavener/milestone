@@ -16,7 +16,12 @@ app.post(
 
 		const result = await cleanup();
 
-		logger.info("File cleanup completed");
+		logger.info("File cleanup completed", {
+			totalFiles: result.totalFiles,
+			orphanedFiles: result.orphanedFiles,
+			deletedFiles: result.deletedFiles,
+			errors: result.errors.length,
+		});
 
 		return json({
 			success: true,

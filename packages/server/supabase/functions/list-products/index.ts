@@ -52,17 +52,25 @@ app.get(
 			.order("created_at", { ascending: true });
 
 		if (productsError) {
+			logger.error("Failed to fetch products", {
+				error: productsError.message,
+			});
 			throw new ServiceError("INTERNAL_ERROR", {
 				debugInfo: `Failed to fetch products: ${productsError.message}`,
 			});
 		}
 
 		if (!products) {
+			logger.info("No products found");
 			return json({ data: [], requestId });
 		}
 
 		// Transform the data to a cleaner format
 		const productsWithPrices = formatProducts(products);
+
+		logger.info("Products listed", {
+			count: productsWithPrices.length,
+		});
 
 		return json({ data: productsWithPrices, requestId });
 	}),

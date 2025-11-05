@@ -43,38 +43,80 @@ app.post(
 		});
 
 		// Ensure Stripe customer exists
-		const stripeCustomerId = await ensureStripeCustomer(
-			user.id,
-			user.email || "",
-		);
+		let stripeCustomerId: string;
+		try {
+			stripeCustomerId = await ensureStripeCustomer(
+				user.id,
+				user.email || "",
+			);
+		} catch (error) {
+			logger.error("Failed to ensure Stripe customer", {
+				userId: user.id,
+				error: error instanceof Error
+					? { message: error.message, stack: error.stack }
+					: String(error),
+			});
+			throw error;
+		}
 
 		// Resolve price IDs
-		const finalPriceIds = await resolvePriceIds(
-			input.plan_key,
-			input.price_ids,
-		);
+		let finalPriceIds: string[];
+		try {
+			finalPriceIds = await resolvePriceIds(
+				input.plan_key,
+				input.price_ids,
+			);
+		} catch (error) {
+			logger.error("Failed to resolve price IDs", {
+				userId: user.id,
+				planKey: input.plan_key,
+				error: error instanceof Error
+					? { message: error.message, stack: error.stack }
+					: String(error),
+			});
+			throw error;
+		}
 
 		// Create checkout session
 		const appUrl = config("APP_URL");
 		if (!appUrl) {
+			logger.error("APP_URL not configured");
 			throw new ServiceError("INTERNAL_ERROR", {
 				debugInfo: "APP_URL is not configured",
 			});
 		}
 
-		const stripeClient = getStripeClient();
-		const session = await stripeClient.checkout.sessions.create({
-			customer: stripeCustomerId,
-			mode: "subscription",
-			line_items: finalPriceIds.map((priceId) => ({
-				price: priceId,
-				quantity: 1,
-			})),
-			success_url: `${appUrl}/account/billing?status=success`,
-			cancel_url: `${appUrl}/account/billing?status=canceled`,
-			metadata: {
-				user_id: user.id,
-			},
+		let session;
+		try {
+			const stripeClient = getStripeClient();
+			session = await stripeClient.checkout.sessions.create({
+				customer: stripeCustomerId,
+				mode: "subscription",
+				line_items: finalPriceIds.map((priceId) => ({
+					price: priceId,
+					quantity: 1,
+				})),
+				success_url: `${appUrl}/account/billing?status=success`,
+				cancel_url: `${appUrl}/account/billing?status=canceled`,
+				metadata: {
+					user_id: user.id,
+				},
+			});
+		} catch (error) {
+			logger.error("Failed to create checkout session", {
+				userId: user.id,
+				error: error instanceof Error
+					? { message: error.message, stack: error.stack }
+					: String(error),
+			});
+			throw new ServiceError("INTERNAL_ERROR", {
+				debugInfo: "Failed to create checkout session",
+			});
+		}
+
+		logger.info("Checkout session created", {
+			userId: user.id,
+			sessionId: session.id,
 		});
 
 		return json({

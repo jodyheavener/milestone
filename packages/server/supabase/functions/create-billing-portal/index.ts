@@ -35,20 +35,50 @@ app.post(
 		});
 
 		// Validate and get Stripe customer
-		const stripeCustomerId = await validateStripeCustomer(user.id);
+		let stripeCustomerId: string;
+		try {
+			stripeCustomerId = await validateStripeCustomer(user.id);
+		} catch (error) {
+			logger.error("Failed to validate Stripe customer", {
+				userId: user.id,
+				error: error instanceof Error
+					? { message: error.message, stack: error.stack }
+					: String(error),
+			});
+			throw error;
+		}
 
 		// Create billing portal session
 		const appUrl = config("APP_URL");
 		if (!appUrl) {
+			logger.error("APP_URL not configured");
 			throw new ServiceError("INTERNAL_ERROR", {
 				debugInfo: "APP_URL is not configured",
 			});
 		}
 
-		const stripeClient = getStripeClient();
-		const session = await stripeClient.billingPortal.sessions.create({
-			customer: stripeCustomerId,
-			return_url: `${appUrl}/account/billing`,
+		let session;
+		try {
+			const stripeClient = getStripeClient();
+			session = await stripeClient.billingPortal.sessions.create({
+				customer: stripeCustomerId,
+				return_url: `${appUrl}/account/billing`,
+			});
+		} catch (error) {
+			logger.error("Failed to create billing portal session", {
+				userId: user.id,
+				error: error instanceof Error
+					? { message: error.message, stack: error.stack }
+					: String(error),
+			});
+			throw new ServiceError("INTERNAL_ERROR", {
+				debugInfo: "Failed to create billing portal session",
+			});
+		}
+
+		logger.info("Billing portal session created", {
+			userId: user.id,
+			sessionId: session.id,
 		});
 
 		return json({

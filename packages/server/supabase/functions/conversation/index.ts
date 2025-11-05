@@ -32,7 +32,7 @@ app.options("*", () => new Response(null, { status: 204 }));
  */
 async function getProjectContext(
 	sbServiceClient: ReturnType<typeof getServiceClient>,
-	projectId: string,
+	projectId: string
 ): Promise<
 	Array<{
 		content: string;
@@ -70,7 +70,7 @@ async function getProjectContext(
 			website (
 				extracted_content
 			)
-		`,
+		`
 		)
 		.in("id", recordIds);
 
@@ -99,7 +99,7 @@ function buildContextString(
 		file?: { extracted_text: string | null };
 		website?: { extracted_content: string | null };
 	}>,
-	projectGoal: string,
+	projectGoal: string
 ): string {
 	let context = `Project Goal: ${projectGoal}\n\n`;
 	context += "Available Context from Records:\n\n";
@@ -109,15 +109,17 @@ function buildContextString(
 		context += `Content: ${record.content}\n`;
 
 		if (record.file?.extracted_text) {
-			context += `File Content: ${
-				record.file.extracted_text.substring(0, 2000)
-			}\n`;
+			context += `File Content: ${record.file.extracted_text.substring(
+				0,
+				2000
+			)}\n`;
 		}
 
 		if (record.website?.extracted_content) {
-			context += `Website Content: ${
-				record.website.extracted_content.substring(0, 2000)
-			}\n`;
+			context += `Website Content: ${record.website.extracted_content.substring(
+				0,
+				2000
+			)}\n`;
 		}
 
 		context += "\n---\n\n";
@@ -131,7 +133,7 @@ function buildContextString(
  */
 async function generateConversationTitle(
 	firstMessage: string,
-	projectGoal: string,
+	projectGoal: string
 ): Promise<string> {
 	try {
 		const client = getOpenaiClient();
@@ -145,16 +147,15 @@ async function generateConversationTitle(
 				},
 				{
 					role: "user",
-					content:
-						`Project Goal: ${projectGoal}\n\nFirst Message: ${firstMessage}\n\nGenerate a concise title for this conversation.`,
+					content: `Project Goal: ${projectGoal}\n\nFirst Message: ${firstMessage}\n\nGenerate a concise title for this conversation.`,
 				},
 			],
 			max_tokens: 50,
 			temperature: 0.7,
 		});
 
-		const title = response.choices[0]?.message?.content?.trim() ||
-			"New Conversation";
+		const title =
+			response.choices[0]?.message?.content?.trim() || "New Conversation";
 		return title.length > 50 ? title.substring(0, 50) : title;
 	} catch (error) {
 		logger.error("Error generating conversation title", { error });
@@ -211,10 +212,21 @@ app.post(
 					.order("updated_at", { ascending: false });
 
 				if (error) {
+					logger.error("Failed to fetch conversations", {
+						userId: user.id,
+						projectId: input.projectId,
+						error: error.message,
+					});
 					throw new ServiceError("INTERNAL_ERROR", {
 						debugInfo: `Failed to fetch conversations: ${error.message}`,
 					});
 				}
+
+				logger.info("Conversations fetched", {
+					userId: user.id,
+					projectId: input.projectId,
+					count: conversations?.length || 0,
+				});
 
 				return json({
 					conversations: conversations || [],
@@ -243,6 +255,11 @@ app.post(
 					.single();
 
 				if (projectError || !project) {
+					logger.error("Project not found", {
+						userId: user.id,
+						projectId: input.projectId,
+						error: projectError?.message,
+					});
 					throw new ServiceError("NOT_FOUND", {
 						debugInfo: "Project not found",
 					});
@@ -259,10 +276,21 @@ app.post(
 					.single();
 
 				if (error) {
+					logger.error("Failed to create conversation", {
+						userId: user.id,
+						projectId: input.projectId,
+						error: error.message,
+					});
 					throw new ServiceError("INTERNAL_ERROR", {
 						debugInfo: `Failed to create conversation: ${error.message}`,
 					});
 				}
+
+				logger.info("Conversation created", {
+					userId: user.id,
+					conversationId: conversation.id,
+					projectId: input.projectId,
+				});
 
 				return json({
 					conversation,
@@ -289,10 +317,15 @@ app.post(
 					{
 						p_user_id: user.id,
 						p_op_type: "agentic_request",
-					},
+					}
 				);
 
 				if (authError || !authData) {
+					logger.error("Authorization failed", {
+						userId: user.id,
+						conversationId: input.conversationId,
+						error: authError?.message,
+					});
 					throw new ServiceError("INTERNAL_ERROR", {
 						debugInfo: `Authorization failed: ${authError?.message}`,
 					});
@@ -305,6 +338,12 @@ app.post(
 				};
 
 				if (!authResult.allowed) {
+					logger.warn("Operation not authorized", {
+						userId: user.id,
+						conversationId: input.conversationId,
+						reason: authResult.reason,
+						remaining: authResult.remaining,
+					});
 					throw new ServiceError("UNAUTHORIZED", {
 						debugInfo: authResult.reason || "Operation not allowed",
 					});
@@ -318,6 +357,11 @@ app.post(
 					.single();
 
 				if (convError || !conversation) {
+					logger.error("Conversation not found", {
+						userId: user.id,
+						conversationId: input.conversationId,
+						error: convError?.message,
+					});
 					throw new ServiceError("NOT_FOUND", {
 						debugInfo: "Conversation not found",
 					});
@@ -331,6 +375,12 @@ app.post(
 					.single();
 
 				if (projectError || !project || project.user_id !== user.id) {
+					logger.error("Access denied to conversation", {
+						userId: user.id,
+						conversationId: input.conversationId,
+						projectId: conversation.project_id,
+						error: projectError?.message,
+					});
 					throw new ServiceError("UNAUTHORIZED", {
 						debugInfo: "Access denied",
 					});
@@ -344,20 +394,24 @@ app.post(
 					.order("created_at", { ascending: true });
 
 				if (entriesError) {
+					logger.error("Failed to fetch conversation history", {
+						userId: user.id,
+						conversationId: input.conversationId,
+						error: entriesError.message,
+					});
 					throw new ServiceError("INTERNAL_ERROR", {
-						debugInfo:
-							`Failed to fetch conversation history: ${entriesError.message}`,
+						debugInfo: `Failed to fetch conversation history: ${entriesError.message}`,
 					});
 				}
 
 				// Get project context (records with files and websites)
 				const projectRecords = await getProjectContext(
 					sbServiceClient,
-					conversation.project_id,
+					conversation.project_id
 				);
 				const contextString = buildContextString(
 					projectRecords,
-					project.goal || "",
+					project.goal || ""
 				);
 
 				// Create user message entry
@@ -372,6 +426,11 @@ app.post(
 					.single();
 
 				if (userEntryError) {
+					logger.error("Failed to create user entry", {
+						userId: user.id,
+						conversationId: input.conversationId,
+						error: userEntryError.message,
+					});
 					throw new ServiceError("INTERNAL_ERROR", {
 						debugInfo: `Failed to create user entry: ${userEntryError.message}`,
 					});
@@ -381,8 +440,7 @@ app.post(
 				const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
 					{
 						role: "system",
-						content:
-							`You are a helpful AI assistant helping the user work towards their project goal. Use the provided context from their records, files, and websites to provide informed, relevant responses.
+						content: `You are a helpful AI assistant helping the user work towards their project goal. Use the provided context from their records, files, and websites to provide informed, relevant responses.
 
 Project Goal: ${project.goal || "Not specified"}
 
@@ -424,10 +482,18 @@ Guidelines:
 						max_tokens: 2000,
 					});
 
-					assistantResponse = response.choices[0]?.message?.content ||
+					assistantResponse =
+						response.choices[0]?.message?.content ||
 						"I apologize, but I couldn't generate a response.";
 				} catch (error) {
-					logger.error("OpenAI API error", { error });
+					logger.error("OpenAI API error", {
+						userId: user.id,
+						conversationId: input.conversationId,
+						error:
+							error instanceof Error
+								? { message: error.message, stack: error.stack }
+								: String(error),
+					});
 					assistantResponse =
 						"I apologize, but I encountered an error while generating a response. Please try again.";
 				}
@@ -445,9 +511,13 @@ Guidelines:
 						.single();
 
 				if (assistantEntryError) {
+					logger.error("Failed to create assistant entry", {
+						userId: user.id,
+						conversationId: input.conversationId,
+						error: assistantEntryError.message,
+					});
 					throw new ServiceError("INTERNAL_ERROR", {
-						debugInfo:
-							`Failed to create assistant entry: ${assistantEntryError.message}`,
+						debugInfo: `Failed to create assistant entry: ${assistantEntryError.message}`,
 					});
 				}
 
@@ -455,7 +525,7 @@ Guidelines:
 				if (!conversation.title && entries && entries.length === 0) {
 					const title = await generateConversationTitle(
 						input.message,
-						project.goal || "",
+						project.goal || ""
 					);
 					await sbUserClient
 						.from("conversation")
@@ -468,6 +538,11 @@ Guidelines:
 					.from("conversation")
 					.update({ updated_at: new Date().toISOString() })
 					.eq("id", input.conversationId);
+
+				logger.info("Message sent successfully", {
+					userId: user.id,
+					conversationId: input.conversationId,
+				});
 
 				return json({
 					userEntry,
@@ -497,6 +572,11 @@ Guidelines:
 					.single();
 
 				if (convError || !conversation) {
+					logger.error("Conversation not found", {
+						userId: user.id,
+						conversationId: input.conversationId,
+						error: convError?.message,
+					});
 					throw new ServiceError("NOT_FOUND", {
 						debugInfo: "Conversation not found",
 					});
@@ -510,6 +590,12 @@ Guidelines:
 					.single();
 
 				if (projectError || !project || project.user_id !== user.id) {
+					logger.error("Access denied to conversation", {
+						userId: user.id,
+						conversationId: input.conversationId,
+						projectId: conversation.project_id,
+						error: projectError?.message,
+					});
 					throw new ServiceError("UNAUTHORIZED", {
 						debugInfo: "Access denied",
 					});
@@ -531,7 +617,7 @@ Guidelines:
 					if (firstEntry) {
 						title = await generateConversationTitle(
 							firstEntry.content,
-							project.goal || "",
+							project.goal || ""
 						);
 					} else {
 						title = "New Conversation";
@@ -546,10 +632,21 @@ Guidelines:
 					.single();
 
 				if (error) {
+					logger.error("Failed to update conversation title", {
+						userId: user.id,
+						conversationId: input.conversationId,
+						error: error.message,
+					});
 					throw new ServiceError("INTERNAL_ERROR", {
 						debugInfo: `Failed to update conversation: ${error.message}`,
 					});
 				}
+
+				logger.info("Conversation title updated", {
+					userId: user.id,
+					conversationId: input.conversationId,
+					title,
+				});
 
 				return json({
 					conversation: updated,
@@ -577,6 +674,11 @@ Guidelines:
 					.single();
 
 				if (convError || !conversation) {
+					logger.error("Conversation not found", {
+						userId: user.id,
+						conversationId: input.conversationId,
+						error: convError?.message,
+					});
 					throw new ServiceError("NOT_FOUND", {
 						debugInfo: "Conversation not found",
 					});
@@ -590,6 +692,12 @@ Guidelines:
 					.single();
 
 				if (projectError || !project || project.user_id !== user.id) {
+					logger.error("Access denied to conversation", {
+						userId: user.id,
+						conversationId: input.conversationId,
+						projectId: conversation.project_id,
+						error: projectError?.message,
+					});
 					throw new ServiceError("UNAUTHORIZED", {
 						debugInfo: "Access denied",
 					});
@@ -602,10 +710,20 @@ Guidelines:
 					.eq("id", input.conversationId);
 
 				if (error) {
+					logger.error("Failed to delete conversation", {
+						userId: user.id,
+						conversationId: input.conversationId,
+						error: error.message,
+					});
 					throw new ServiceError("INTERNAL_ERROR", {
 						debugInfo: `Failed to delete conversation: ${error.message}`,
 					});
 				}
+
+				logger.info("Conversation deleted", {
+					userId: user.id,
+					conversationId: input.conversationId,
+				});
 
 				return json({
 					success: true,
@@ -618,7 +736,7 @@ Guidelines:
 					debugInfo: `Unknown action: ${input.action}`,
 				});
 		}
-	}),
+	})
 );
 
 export default {

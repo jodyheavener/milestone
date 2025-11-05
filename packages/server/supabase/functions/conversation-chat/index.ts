@@ -616,6 +616,12 @@ app.post(
 		};
 
 		if (!authResult.allowed) {
+			logger.warn("Operation not allowed", {
+				userId: user.id,
+				conversationId: input.conversation_id,
+				reason: authResult.reason,
+				remaining: authResult.remaining,
+			});
 			throw new ServiceError("RATE_LIMIT_EXCEEDED", {
 				debugInfo: authResult.reason || "Usage limit exceeded",
 			});
@@ -629,6 +635,11 @@ app.post(
 			.single();
 
 		if (convError || !conversation) {
+			logger.error("Conversation not found", {
+				userId: user.id,
+				conversationId: input.conversation_id,
+				error: convError?.message,
+			});
 			throw new ServiceError("NOT_FOUND", {
 				debugInfo: "Conversation not found",
 			});
@@ -642,12 +653,22 @@ app.post(
 			.single();
 
 		if (projectError || !project) {
+			logger.error("Project not found", {
+				userId: user.id,
+				projectId: conversation.project_id,
+				error: projectError?.message,
+			});
 			throw new ServiceError("NOT_FOUND", {
 				debugInfo: "Project not found",
 			});
 		}
 
 		if (project.user_id !== user.id) {
+			logger.error("Access denied to conversation", {
+				userId: user.id,
+				conversationId: input.conversation_id,
+				projectId: conversation.project_id,
+			});
 			throw new ServiceError("UNAUTHORIZED", {
 				debugInfo: "You don't have access to this conversation",
 			});
@@ -813,6 +834,12 @@ app.post(
 				// Non-critical, continue
 			}
 		}
+
+		logger.info("Conversation chat completed", {
+			userId: user.id,
+			conversationId: input.conversation_id,
+			remaining: authResult.remaining ?? null,
+		});
 
 		return json({
 			response: assistantResponse,

@@ -65,13 +65,28 @@ app.post(
 			remaining?: number;
 		};
 
+		if (!result.allowed) {
+			logger.warn("Operation not authorized", {
+				userId: user.id,
+				operation: input.op,
+				reason: result.reason,
+				remaining: result.remaining,
+			});
+		} else {
+			logger.info("Operation authorized", {
+				userId: user.id,
+				operation: input.op,
+				remaining: result.remaining,
+			});
+		}
+
 		return json({
 			allowed: result.allowed,
 			reason: result.reason || null,
 			remaining: result.remaining ?? null,
 			requestId,
 		});
-	}),
+	})
 );
 
 export default {

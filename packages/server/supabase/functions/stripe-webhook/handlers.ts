@@ -169,6 +169,7 @@ export async function handleSubscriptionDeleted(
 	const sbUserClient = getServiceClient();
 
 	if (!subscription.customer || typeof subscription.customer !== "string") {
+		logger.warn("Subscription deleted event missing customer");
 		return;
 	}
 
@@ -179,15 +180,30 @@ export async function handleSubscriptionDeleted(
 		.single();
 
 	if (!customer) {
+		logger.warn("Customer not found for deleted subscription", {
+			customerId: subscription.customer,
+		});
 		return;
 	}
 
-	await sbUserClient
+	logger.info("Processing subscription deletion", {
+		subscriptionId: subscription.id,
+		userId: customer.user_id,
+	});
+
+	const { error: subError } = await sbUserClient
 		.from("subscriptions")
 		.update({ status: "canceled" })
 		.eq("stripe_subscription_id", subscription.id);
 
-	await sbUserClient
+	if (subError) {
+		logger.error("Failed to update subscription status", {
+			subscriptionId: subscription.id,
+			error: subError.message,
+		});
+	}
+
+	const { error: entitlementsError } = await sbUserClient
 		.from("entitlements")
 		.update({
 			projects_limit: 0,
@@ -196,6 +212,13 @@ export async function handleSubscriptionDeleted(
 			source: null,
 		})
 		.eq("user_id", customer.user_id);
+
+	if (entitlementsError) {
+		logger.error("Failed to clear entitlements", {
+			userId: customer.user_id,
+			error: entitlementsError.message,
+		});
+	}
 }
 
 /**
@@ -223,14 +246,29 @@ export async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
 			: (invoiceWithSubscription.subscription?.id ?? null);
 
 	if (!subscriptionId) {
+		logger.warn("Invoice payment failed event missing subscription", {
+			invoiceId: invoice.id,
+		});
 		return;
 	}
 
+	logger.info("Processing invoice payment failed", {
+		invoiceId: invoice.id,
+		subscriptionId,
+	});
+
 	const sbUserClient = getServiceClient();
-	await sbUserClient
+	const { error } = await sbUserClient
 		.from("subscriptions")
 		.update({ status: "past_due" })
 		.eq("stripe_subscription_id", subscriptionId);
+
+	if (error) {
+		logger.error("Failed to update subscription status to past_due", {
+			subscriptionId,
+			error: error.message,
+		});
+	}
 }
 
 /**

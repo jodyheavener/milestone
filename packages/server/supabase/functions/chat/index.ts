@@ -72,6 +72,11 @@ app.post(
 		};
 
 		if (!authResult.allowed) {
+			logger.warn("Operation not allowed", {
+				userId: user.id,
+				reason: authResult.reason,
+				remaining: authResult.remaining,
+			});
 			throw new ServiceError("RATE_LIMIT_EXCEEDED", {
 				debugInfo: authResult.reason || "Agentic request limit exceeded",
 			});
@@ -85,6 +90,11 @@ app.post(
 			.single();
 
 		if (projectError || !project) {
+			logger.error("Project not found", {
+				userId: user.id,
+				projectId: input.projectId,
+				error: projectError?.message,
+			});
 			throw new ServiceError("NOT_FOUND", {
 				debugInfo: "Project not found",
 			});
@@ -106,6 +116,11 @@ app.post(
 				.single();
 
 			if (convError || !newConversation) {
+				logger.error("Failed to create conversation", {
+					userId: user.id,
+					projectId: input.projectId,
+					error: convError?.message,
+				});
 				throw new ServiceError("INTERNAL_ERROR", {
 					debugInfo: "Failed to create conversation",
 				});
@@ -122,6 +137,12 @@ app.post(
 				.single();
 
 			if (convCheckError || !existingConv) {
+				logger.error("Conversation not found", {
+					userId: user.id,
+					conversationId,
+					projectId: input.projectId,
+					error: convCheckError?.message,
+				});
 				throw new ServiceError("NOT_FOUND", {
 					debugInfo: "Conversation not found",
 				});
@@ -281,6 +302,12 @@ Context from the user's records will be provided to help you give informed respo
 				}
 			}
 		}
+
+		logger.info("Chat request completed", {
+			userId: user.id,
+			conversationId,
+			projectId: input.projectId,
+		});
 
 		return json({
 			conversationId,

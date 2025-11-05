@@ -39,22 +39,71 @@ app.post(
 		});
 
 		// Validate URL format and protocol
-		validateUrl(input.url);
+		try {
+			validateUrl(input.url);
+		} catch (error) {
+			logger.error("Invalid URL", {
+				userId: user.id,
+				url: input.url,
+				error: error instanceof Error
+					? { message: error.message, stack: error.stack }
+					: String(error),
+			});
+			throw error;
+		}
 
 		// Extract page content
-		const pageData = await extractPage(input.url);
+		let pageData;
+		try {
+			pageData = await extractPage(input.url);
+		} catch (error) {
+			logger.error("Failed to extract page content", {
+				userId: user.id,
+				url: input.url,
+				error: error instanceof Error
+					? { message: error.message, stack: error.stack }
+					: String(error),
+			});
+			throw new ServiceError("INTERNAL_ERROR", {
+				debugInfo: "Failed to extract page content",
+			});
+		}
 
 		if (!pageData.content || pageData.content.trim().length === 0) {
+			logger.warn("No content extracted from page", {
+				userId: user.id,
+				url: input.url,
+			});
 			throw new ServiceError("NO_CONTENT", {
 				debugInfo: "No content could be extracted from the page",
 			});
 		}
 
 		// Generate summary using OpenAI
-		const summary = await generateWebsiteSummary(
-			pageData.content,
-			pageData.title,
-		);
+		let summary: string;
+		try {
+			summary = await generateWebsiteSummary(
+				pageData.content,
+				pageData.title,
+			);
+		} catch (error) {
+			logger.error("Failed to generate website summary", {
+				userId: user.id,
+				url: input.url,
+				error: error instanceof Error
+					? { message: error.message, stack: error.stack }
+					: String(error),
+			});
+			// Continue without summary rather than failing
+			summary = "";
+		}
+
+		logger.info("Website parsed successfully", {
+			userId: user.id,
+			url: input.url,
+			contentLength: pageData.content.length,
+			title: pageData.title,
+		});
 
 		const response = {
 			pageTitle: pageData.title || "Untitled",

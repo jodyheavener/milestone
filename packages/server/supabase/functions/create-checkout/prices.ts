@@ -1,4 +1,4 @@
-import { getServiceClient } from "@/lib";
+import { getServiceClient, logger } from "@/lib";
 import { ServiceError } from "@milestone/shared";
 
 /**
@@ -25,6 +25,10 @@ export async function resolvePriceIds(
 			.eq("active", true);
 
 		if (priceError || !prices || prices.length === 0) {
+			logger.error("Plan key not found", {
+				planKey,
+				error: priceError?.message,
+			});
 			throw new ServiceError("INVALID_REQUEST", {
 				debugInfo: `Plan key '${planKey}' not found`,
 			});

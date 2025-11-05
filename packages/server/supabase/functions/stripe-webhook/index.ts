@@ -68,59 +68,75 @@ app.post(
 		});
 
 		// Handle different event types
-		switch (event.type) {
-			case "checkout.session.completed": {
-				handleCheckoutSessionCompleted(
-					event.data.object as Stripe.Checkout.Session,
-					requestId,
-				);
-				break;
+		try {
+			switch (event.type) {
+				case "checkout.session.completed": {
+					handleCheckoutSessionCompleted(
+						event.data.object as Stripe.Checkout.Session,
+						requestId,
+					);
+					break;
+				}
+				case "customer.subscription.created":
+				case "customer.subscription.updated": {
+					await handleSubscriptionCreatedOrUpdated(
+						event.data.object as Stripe.Subscription,
+						requestId,
+					);
+					break;
+				}
+				case "customer.subscription.deleted": {
+					await handleSubscriptionDeleted(
+						event.data.object as Stripe.Subscription,
+					);
+					break;
+				}
+				case "invoice.paid": {
+					handleInvoicePaid(event.data.object as Stripe.Invoice, requestId);
+					break;
+				}
+				case "invoice.payment_failed": {
+					await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
+					break;
+				}
+				case "product.updated": {
+					await handleProductUpdated(
+						event.data.object as Stripe.Product,
+						requestId,
+					);
+					break;
+				}
+				case "price.updated": {
+					await handlePriceUpdated(event.data.object as Stripe.Price, requestId);
+					break;
+				}
+				case "customer.deleted": {
+					await handleCustomerDeleted(
+						event.data.object as Stripe.Customer,
+						requestId,
+					);
+					break;
+				}
+				default: {
+					logger.info("Unhandled webhook type", {
+						eventType: event.type,
+					});
+				}
 			}
-			case "customer.subscription.created":
-			case "customer.subscription.updated": {
-				await handleSubscriptionCreatedOrUpdated(
-					event.data.object as Stripe.Subscription,
-					requestId,
-				);
-				break;
-			}
-			case "customer.subscription.deleted": {
-				await handleSubscriptionDeleted(
-					event.data.object as Stripe.Subscription,
-				);
-				break;
-			}
-			case "invoice.paid": {
-				handleInvoicePaid(event.data.object as Stripe.Invoice, requestId);
-				break;
-			}
-			case "invoice.payment_failed": {
-				await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
-				break;
-			}
-			case "product.updated": {
-				await handleProductUpdated(
-					event.data.object as Stripe.Product,
-					requestId,
-				);
-				break;
-			}
-			case "price.updated": {
-				await handlePriceUpdated(event.data.object as Stripe.Price, requestId);
-				break;
-			}
-			case "customer.deleted": {
-				await handleCustomerDeleted(
-					event.data.object as Stripe.Customer,
-					requestId,
-				);
-				break;
-			}
-			default: {
-				logger.info("Unhandled webhook type", {
-					eventType: event.type,
-				});
-			}
+
+			logger.info("Webhook processed successfully", {
+				eventType: event.type,
+				eventId: event.id,
+			});
+		} catch (error) {
+			logger.error("Error processing webhook", {
+				eventType: event.type,
+				eventId: event.id,
+				error: error instanceof Error
+					? { message: error.message, stack: error.stack }
+					: String(error),
+			});
+			// Don't throw - return success to Stripe to avoid retries
 		}
 
 		return json({ received: true, requestId });

@@ -1,4 +1,4 @@
-import { getServiceClient, getStripeClient } from "@/lib";
+import { getServiceClient, getStripeClient, logger } from "@/lib";
 import { ServiceError } from "@milestone/shared";
 
 /**
@@ -17,6 +17,10 @@ export async function validateStripeCustomer(userId: string): Promise<string> {
 		.single();
 
 	if (customerError || !customer) {
+		logger.error("Billing customer not found", {
+			userId,
+			error: customerError?.message,
+		});
 		throw new ServiceError("NOT_FOUND", {
 			debugInfo:
 				"No billing customer found. Please create a subscription first.",
@@ -33,11 +37,22 @@ export async function validateStripeCustomer(userId: string): Promise<string> {
 			"code" in stripeError &&
 			stripeError.code === "resource_missing"
 		) {
+			logger.error("Customer not found in Stripe", {
+				userId,
+				customerId: customer.stripe_customer_id,
+			});
 			throw new ServiceError("NOT_FOUND", {
 				debugInfo:
 					"Customer not found in Stripe. Please create a new subscription.",
 			});
 		} else {
+			logger.error("Stripe customer validation error", {
+				userId,
+				customerId: customer.stripe_customer_id,
+				error: stripeError instanceof Error
+					? { message: stripeError.message, stack: stripeError.stack }
+					: String(stripeError),
+			});
 			throw stripeError;
 		}
 	}
