@@ -7,17 +7,17 @@ import {
 } from "@react-router/dev/routes";
 
 const routes: RouteConfig = [
-	layout("./layouts/application.tsx", [
+	layout("./layouts/application/layout.tsx", [
 		index("./modules/home/routes/home.tsx"),
 		route("pricing", "./modules/pricing/routes/pricing.tsx"),
 
-		layout("./layouts/unauthenticated.tsx", [
+		layout("./layouts/unauthenticated/layout.tsx", [
 			route("login", "./modules/auth/routes/login.tsx"),
 			route("register", "./modules/auth/routes/register.tsx"),
 		]),
 	]),
 
-	layout("./layouts/authenticated.tsx", [
+	layout("./layouts/authenticated/layout.tsx", [
 		...prefix("projects", [
 			index("./modules/projects/routes/list.tsx"),
 			route("new", "./modules/projects/routes/new.tsx"),

@@ -4,7 +4,7 @@ import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
 import { getErrorContent } from "@/lib/errors";
 import { AuthContext, makeServerClient } from "@/lib/supabase";
 import { AppProviders } from "@/ui/AppProviders";
-import { ErrorContent } from "@/ui/Composite/ErrorContent";
+import { ErrorContent } from "@/ui/composite/ErrorContent";
 import { ThemeProvider } from "@/ui/ThemeProvider";
 import type { Route } from "./+types/root";
 

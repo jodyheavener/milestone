@@ -6,7 +6,7 @@ export { availableThemes, ThemeProvider, useTheme } from "./ThemeProvider";
 export { Title } from "./Title";
 
 // Composite components
-export { ErrorContent } from "./Composite/ErrorContent";
-export { HeaderAuthenticated } from "./Composite/HeaderAuthenticated";
-export { Navigation } from "./Composite/Navigation";
-export { UserInfo } from "./Composite/UserInfo";
+export { ErrorContent } from "./composite/ErrorContent";
+export { HeaderAuthenticated } from "./composite/HeaderAuthenticated";
+export { Navigation } from "./composite/Navigation";
+export { UserInfo } from "./composite/UserInfo";
