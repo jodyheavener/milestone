@@ -5,7 +5,7 @@ import {
 	createCheckoutSession,
 	getProducts,
 	getSubscription,
-} from "@/modules/account/api/billing";
+} from "@/modules/account/api/subscription";
 import type { Product } from "@/modules/account/model/types";
 import { PricingCard } from "../ui/pricing-card";
 import { PricingHeader } from "../ui/pricing-header";

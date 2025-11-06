@@ -3,7 +3,6 @@ import { useAuth } from "@/lib/auth";
 import { updateEmail, updatePassword } from "../api/settings";
 import { validateEmailForm, validatePasswordForm } from "../lib/validation";
 import type { EmailUpdateData, PasswordUpdateData } from "../model/types";
-import { AccountNavigation } from "../ui/account-navigation";
 import { DangerZone } from "../ui/danger-zone";
 import { EmailForm } from "../ui/email-form";
 import { PasswordForm } from "../ui/password-form";
@@ -89,7 +88,6 @@ export default function SettingsRoute() {
 			<div className="mb-8">
 				<h1 className="text-3xl font-bold text-foreground">Account</h1>
 				<p className="text-muted-foreground mt-2">Manage your account.</p>
-				<AccountNavigation activeTab="account" />
 			</div>
 
 			<div className="space-y-8">

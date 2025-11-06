@@ -5,11 +5,10 @@ import {
 	getProjectsCount,
 	getSubscription,
 	getUsageCounters,
-} from "../api/billing";
-import { handleManageBilling as handleManageBillingAction } from "../lib/billing-handlers";
-import { AccountNavigation } from "../ui/account-navigation";
-import { BillingDisplay } from "../ui/billing-display";
-import type { Route } from "./+types/billing";
+} from "../api/subscription";
+import { handleManageSubscription as handleManageSubscriptionAction } from "../lib/subscription-handlers";
+import { SubscriptionDisplay } from "../ui/subscription-display";
+import type { Route } from "./+types/subscription";
 
 export async function loader({ context }: Route.LoaderArgs) {
 	const { supabase } = context.get(AuthContext);
@@ -39,26 +38,28 @@ export async function loader({ context }: Route.LoaderArgs) {
 
 export function meta({}: Route.MetaArgs) {
 	return [
-		{ title: "Billing - Milestone" },
+		{ title: "Subscription - Milestone" },
 		{ name: "description", content: "Manage your subscription and usage" },
 	];
 }
 
-export default function BillingRoute({ loaderData }: Route.ComponentProps) {
+export default function SubscriptionRoute({
+	loaderData,
+}: Route.ComponentProps) {
 	const [isLoading, setIsLoading] = useState(false);
 	const { subscription, entitlements, usageCounters, projectsCount } =
 		loaderData;
 
-	const handleManageBilling = async () => {
+	const handleManageSubscription = async () => {
 		setIsLoading(true);
 		try {
-			const url = await handleManageBillingAction();
+			const url = await handleManageSubscriptionAction();
 			if (url) {
 				window.location.href = url;
 			}
 		} catch (error) {
 			console.error("Error creating portal session:", error);
-			alert("Failed to open billing portal. Please try again.");
+			alert("Failed to open subscription portal. Please try again.");
 		} finally {
 			setIsLoading(false);
 		}
@@ -67,19 +68,18 @@ export default function BillingRoute({ loaderData }: Route.ComponentProps) {
 	return (
 		<div className="max-w-4xl mx-auto p-6">
 			<div className="mb-8">
-				<h1 className="text-3xl font-bold text-foreground">Billing</h1>
+				<h1 className="text-3xl font-bold text-foreground">Subscription</h1>
 				<p className="text-muted-foreground mt-2">
 					Manage your subscription and usage.
 				</p>
-				<AccountNavigation activeTab="billing" />
 			</div>
 
-			<BillingDisplay
+			<SubscriptionDisplay
 				subscription={subscription}
 				entitlements={entitlements}
 				usageCounters={usageCounters}
 				projectsCount={projectsCount}
-				onManageBilling={handleManageBilling}
+				onManageSubscription={handleManageSubscription}
 				isLoading={isLoading}
 			/>
 		</div>

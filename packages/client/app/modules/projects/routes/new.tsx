@@ -4,7 +4,7 @@ import { AuthContext } from "@/lib/supabase";
 import {
 	canCreateProject,
 	getEntitlements,
-} from "@/modules/account/api/billing";
+} from "@/modules/account/api/subscription";
 import { createProject } from "../api/projects";
 import { NewProjectForm } from "../ui/new-project-form";
 import type { Route } from "./+types/new";

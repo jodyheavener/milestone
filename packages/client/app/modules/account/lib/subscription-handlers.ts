@@ -1,10 +1,10 @@
 import { makeBrowserClient } from "@/lib/supabase";
-import { createPortalSession } from "../api/billing";
+import { createPortalSession } from "../api/subscription";
 
 /**
- * Handle opening the billing portal
+ * Handle opening the subscription portal
  */
-export async function handleManageBilling(): Promise<string | null> {
+export async function handleManageSubscription(): Promise<string | null> {
 	const supabase = makeBrowserClient();
 	const result = await createPortalSession(supabase);
 	return result.url || null;

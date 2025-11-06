@@ -3,7 +3,6 @@ import { useAuth } from "@/lib/auth";
 import { updateProfileWithBrowser } from "../api/profile";
 import { type ProfileFormData, validateProfileForm } from "../lib/validation";
 import type { UpdateProfileData } from "../model/types";
-import { AccountNavigation } from "../ui/account-navigation";
 import { ProfileForm } from "../ui/profile-form";
 
 export default function ProfileRoute() {
@@ -59,7 +58,6 @@ export default function ProfileRoute() {
 				<p className="text-muted-foreground mt-2">
 					Manage your personal information and job details.
 				</p>
-				<AccountNavigation activeTab="profile" />
 			</div>
 
 			<ProfileForm

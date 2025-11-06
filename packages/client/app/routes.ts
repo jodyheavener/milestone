@@ -47,7 +47,7 @@ const routes: RouteConfig = [
 		...prefix("account", [
 			index("./modules/account/routes/account.tsx"),
 			route("profile", "./modules/account/routes/profile.tsx"),
-			route("billing", "./modules/account/routes/billing.tsx"),
+			route("subscription", "./modules/account/routes/subscription.tsx"),
 			route("delete", "./modules/account/routes/delete.tsx"),
 		]),
 	]),
