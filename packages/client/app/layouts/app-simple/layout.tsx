@@ -1,6 +1,6 @@
 import { Outlet } from "react-router";
 
-export default function LayoutFull() {
+export default function Layout() {
 	return (
 		<>
 			<Outlet />

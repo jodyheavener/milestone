@@ -10,6 +10,10 @@ export const middleware: Route.MiddlewareFunction[] = [
 	},
 ];
 
-export default function LayoutUnauthenticated() {
-	return <Outlet />;
+export default function Layout() {
+	return (
+		<>
+			<Outlet />
+		</>
+	);
 }
