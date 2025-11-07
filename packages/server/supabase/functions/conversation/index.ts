@@ -28,7 +28,7 @@ const ConversationRequestSchema = z.object({
 app.options("*", () => new Response(null, { status: 204 }));
 
 /**
- * Get project records with files and websites for context
+ * Get project context entries with files and websites for context
  */
 async function getProjectContext(
 	sbServiceClient: ReturnType<typeof getServiceClient>,
@@ -40,26 +40,30 @@ async function getProjectContext(
 		website?: { extracted_content: string | null };
 	}>
 > {
-	// Get records linked to this project
-	const { data: recordProjects, error: rpError } = await sbServiceClient
-		.from("record_project")
-		.select("record_id")
+	// Get context entries linked to this project
+	const { data: contextEntryProjects, error: rpError } = await sbServiceClient
+		.from("context_entry_project")
+		.select("context_entry_id")
 		.eq("project_id", projectId);
 
 	if (rpError) {
-		logger.error("Error fetching record projects", { error: rpError.message });
+		logger.error("Error fetching context entry projects", {
+			error: rpError.message,
+		});
 		return [];
 	}
 
-	if (!recordProjects || recordProjects.length === 0) {
+	if (!contextEntryProjects || contextEntryProjects.length === 0) {
 		return [];
 	}
 
-	const recordIds = recordProjects.map((rp) => rp.record_id);
+	const contextEntryIds = contextEntryProjects.map((cep) =>
+		cep.context_entry_id
+	);
 
-	// Get records with their files and websites
-	const { data: records, error } = await sbServiceClient
-		.from("record")
+	// Get context entries with their files and websites
+	const { data: contextEntries, error } = await sbServiceClient
+		.from("context_entry")
 		.select(
 			`
 			id,
@@ -72,29 +76,29 @@ async function getProjectContext(
 			)
 		`,
 		)
-		.in("id", recordIds);
+		.in("id", contextEntryIds);
 
 	if (error) {
 		logger.error("Error fetching project context", { error: error.message });
 		return [];
 	}
 
-	return (records || []).map((record) => ({
-		content: record.content,
-		file: Array.isArray(record.file)
-			? record.file[0]
-			: record.file || undefined,
-		website: Array.isArray(record.website)
-			? record.website[0]
-			: record.website || undefined,
+	return (contextEntries || []).map((contextEntry) => ({
+		content: contextEntry.content,
+		file: Array.isArray(contextEntry.file)
+			? contextEntry.file[0]
+			: contextEntry.file || undefined,
+		website: Array.isArray(contextEntry.website)
+			? contextEntry.website[0]
+			: contextEntry.website || undefined,
 	}));
 }
 
 /**
- * Build context string from project records
+ * Build context string from project context entries
  */
 function buildContextString(
-	records: Array<{
+	contextEntries: Array<{
 		content: string;
 		file?: { extracted_text: string | null };
 		website?: { extracted_content: string | null };
@@ -102,24 +106,24 @@ function buildContextString(
 	projectGoal: string,
 ): string {
 	let context = `Project Goal: ${projectGoal}\n\n`;
-	context += "Available Context from Records:\n\n";
+	context += "Available Context from Context Entries:\n\n";
 
-	records.forEach((record, index) => {
-		context += `Record ${index + 1}:\n`;
-		context += `Content: ${record.content}\n`;
+	contextEntries.forEach((contextEntry, index) => {
+		context += `Context Entry ${index + 1}:\n`;
+		context += `Content: ${contextEntry.content}\n`;
 
-		if (record.file?.extracted_text) {
+		if (contextEntry.file?.extracted_text) {
 			context += `File Content: ${
-				record.file.extracted_text.substring(
+				contextEntry.file.extracted_text.substring(
 					0,
 					2000,
 				)
 			}\n`;
 		}
 
-		if (record.website?.extracted_content) {
+		if (contextEntry.website?.extracted_content) {
 			context += `Website Content: ${
-				record.website.extracted_content.substring(
+				contextEntry.website.extracted_content.substring(
 					0,
 					2000,
 				)
@@ -410,13 +414,13 @@ app.post(
 					});
 				}
 
-				// Get project context (records with files and websites)
-				const projectRecords = await getProjectContext(
+				// Get project context (context entries with files and websites)
+				const projectContextEntries = await getProjectContext(
 					sbServiceClient,
 					conversation.project_id,
 				);
 				const contextString = buildContextString(
-					projectRecords,
+					projectContextEntries,
 					project.goal || "",
 				);
 
@@ -447,7 +451,7 @@ app.post(
 					{
 						role: "system",
 						content:
-							`You are a helpful AI assistant helping the user work towards their project goal. Use the provided context from their records, files, and websites to provide informed, relevant responses.
+							`You are a helpful AI assistant helping the user work towards their project goal. Use the provided context from their context entries, files, and websites to provide informed, relevant responses.
 
 Project Goal: ${project.goal || "Not specified"}
 

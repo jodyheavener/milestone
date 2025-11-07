@@ -10,7 +10,7 @@ interface ContextItem {
 }
 
 /**
- * Retrieves relevant context from project records for the conversation
+ * Retrieves relevant context from project context entries for the conversation
  * Uses vector search to find the most relevant content chunks
  */
 export async function getProjectContext(
@@ -43,8 +43,8 @@ export async function getProjectContext(
 		}
 
 		if (!searchResults || searchResults.length === 0) {
-			// Fallback: get recent records directly
-			return await getRecentRecordsContext(supabase, projectId);
+			// Fallback: get recent context entries directly
+			return await getRecentContextEntriesContext(supabase, projectId);
 		}
 
 		// Return formatted context items
@@ -95,20 +95,20 @@ function buildContextualQuery(
 }
 
 /**
- * Fallback: Get recent records as context when vector search fails
+ * Fallback: Get recent context entries as context when vector search fails
  */
-async function getRecentRecordsContext(
+async function getRecentContextEntriesContext(
 	supabase: SupabaseClient<Database>,
 	projectId: string,
 ): Promise<ContextItem[]> {
 	try {
-		// Get records linked to this project
-		const { data: records, error } = await supabase
-			.from("record_project")
+		// Get context entries linked to this project
+		const { data: contextEntryProjects, error } = await supabase
+			.from("context_entry_project")
 			.select(
 				`
-				record_id,
-				record:record_id (
+				context_entry_id,
+				context_entry:context_entry_id (
 					id,
 					content,
 					file (
@@ -126,28 +126,28 @@ async function getRecentRecordsContext(
 			.order("created_at", { ascending: false })
 			.limit(3);
 
-		if (error || !records) {
+		if (error || !contextEntryProjects) {
 			return [];
 		}
 
 		const contextItems: ContextItem[] = [];
 
-		for (const recordProject of records) {
-			const record = recordProject.record;
-			if (!record) continue;
+		for (const contextEntryProject of contextEntryProjects) {
+			const contextEntry = contextEntryProject.context_entry;
+			if (!contextEntry) continue;
 
-			// Add record content
-			if (record.content) {
+			// Add context entry content
+			if (contextEntry.content) {
 				contextItems.push({
-					text: record.content.substring(0, 1000), // Limit length
-					source_type: "record",
-					source_id: record.id,
+					text: contextEntry.content.substring(0, 1000), // Limit length
+					source_type: "context_entry",
+					source_id: contextEntry.id,
 				});
 			}
 
 			// Add file content if available
-			if (record.file && record.file.length > 0) {
-				const file = record.file[0];
+			if (contextEntry.file && contextEntry.file.length > 0) {
+				const file = contextEntry.file[0];
 				if (file.extracted_text) {
 					contextItems.push({
 						text: file.extracted_text.substring(0, 1000),
@@ -158,8 +158,8 @@ async function getRecentRecordsContext(
 			}
 
 			// Add website content if available
-			if (record.website && record.website.length > 0) {
-				const website = record.website[0];
+			if (contextEntry.website && contextEntry.website.length > 0) {
+				const website = contextEntry.website[0];
 				if (website.extracted_content) {
 					contextItems.push({
 						text: website.extracted_content.substring(0, 1000),
@@ -172,7 +172,7 @@ async function getRecentRecordsContext(
 
 		return contextItems;
 	} catch (error) {
-		logger.error("Failed to get recent records context", { error });
+		logger.error("Failed to get recent context entries context", { error });
 		return [];
 	}
 }

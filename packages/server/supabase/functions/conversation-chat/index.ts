@@ -96,33 +96,36 @@ async function getConversationHistory(
 }
 
 /**
- * Process records that haven't been indexed yet for this project
+ * Process context entries that haven't been indexed yet for this project
  */
-async function processUnindexedRecords(
+async function processUnindexedContextEntries(
 	supabase: ReturnType<typeof getServiceClient>,
 	aiSearch: ReturnType<typeof createAISearchService>,
 	projectId: string,
 ) {
 	try {
-		// Get records associated with this project that don't have chunks yet
-		const { data: recordProjects, error: rpError } = await supabase
-			.from("record_project")
-			.select("record_id")
+		// Get context entries associated with this project that don't have chunks yet
+		const { data: contextEntryProjects, error: rpError } = await supabase
+			.from("context_entry_project")
+			.select("context_entry_id")
 			.eq("project_id", projectId);
 
-		if (rpError || !recordProjects || recordProjects.length === 0) {
+		if (rpError || !contextEntryProjects || contextEntryProjects.length === 0) {
 			return;
 		}
 
-		const recordIds = recordProjects.map((rp) => rp.record_id);
+		const contextEntryIds = contextEntryProjects.map((cep) =>
+			cep.context_entry_id
+		);
 
-		// Find records that don't have content chunks yet
-		const { data: recordsWithChunks, error: chunksError } = await supabase
-			.from("content_chunk")
-			.select("source_id")
-			.eq("project_id", projectId)
-			.eq("source_type", "record")
-			.in("source_id", recordIds);
+		// Find context entries that don't have content chunks yet
+		const { data: contextEntriesWithChunks, error: chunksError } =
+			await supabase
+				.from("content_chunk")
+				.select("source_id")
+				.eq("project_id", projectId)
+				.eq("source_type", "context_entry")
+				.in("source_id", contextEntryIds);
 
 		if (chunksError) {
 			logger.warn("Error checking for existing chunks", {
@@ -131,22 +134,22 @@ async function processUnindexedRecords(
 			return;
 		}
 
-		const indexedRecordIds = new Set(
-			(recordsWithChunks || []).map((chunk) => chunk.source_id),
+		const indexedContextEntryIds = new Set(
+			(contextEntriesWithChunks || []).map((chunk) => chunk.source_id),
 		);
 
-		// Get records that need indexing
-		const unindexedRecordIds = recordIds.filter(
-			(id) => !indexedRecordIds.has(id),
+		// Get context entries that need indexing
+		const unindexedContextEntryIds = contextEntryIds.filter(
+			(id) => !indexedContextEntryIds.has(id),
 		);
 
-		if (unindexedRecordIds.length === 0) {
+		if (unindexedContextEntryIds.length === 0) {
 			return;
 		}
 
-		// Get the full record data with files and websites
-		const { data: records, error: recordsError } = await supabase
-			.from("record")
+		// Get the full context entry data with files and websites
+		const { data: contextEntries, error: contextEntriesError } = await supabase
+			.from("context_entry")
 			.select(
 				`
 				id,
@@ -161,35 +164,35 @@ async function processUnindexedRecords(
 				)
 			`,
 			)
-			.in("id", unindexedRecordIds);
+			.in("id", unindexedContextEntryIds);
 
-		if (recordsError || !records || records.length === 0) {
+		if (contextEntriesError || !contextEntries || contextEntries.length === 0) {
 			return;
 		}
 
-		logger.info("Processing unindexed records", {
+		logger.info("Processing unindexed context entries", {
 			projectId,
-			count: records.length,
+			count: contextEntries.length,
 		});
 
-		// Process each record and its attachments
-		for (const record of records) {
-			// Process record content
-			if (record.content && record.content.trim().length > 0) {
+		// Process each context entry and its attachments
+		for (const contextEntry of contextEntries) {
+			// Process context entry content
+			if (contextEntry.content && contextEntry.content.trim().length > 0) {
 				try {
 					await aiSearch.processContent(
-						"record",
-						record.id,
+						"context_entry",
+						contextEntry.id,
 						projectId,
-						record.content,
+						contextEntry.content,
 					);
-					logger.info("Successfully indexed record", {
-						recordId: record.id,
+					logger.info("Successfully indexed context entry", {
+						contextEntryId: contextEntry.id,
 						projectId,
 					});
 				} catch (processError) {
-					logger.error("Failed to process record for search", {
-						recordId: record.id,
+					logger.error("Failed to process context entry for search", {
+						contextEntryId: contextEntry.id,
 						projectId,
 						error: processError instanceof Error
 							? processError.message
@@ -199,10 +202,10 @@ async function processUnindexedRecords(
 			}
 
 			// Process file attachments
-			const files = Array.isArray(record.file)
-				? record.file
-				: record.file
-				? [record.file]
+			const files = Array.isArray(contextEntry.file)
+				? contextEntry.file
+				: contextEntry.file
+				? [contextEntry.file]
 				: [];
 			for (const file of files) {
 				if (file.extracted_text && file.extracted_text.trim().length > 0) {
@@ -218,7 +221,7 @@ async function processUnindexedRecords(
 
 						if (!existingChunks || existingChunks.length === 0) {
 							// For files and websites, we need to create chunks manually
-							// since processContent tries to create record embeddings
+							// since processContent tries to create context entry embeddings
 							const config = await aiSearch.getSearchConfig(projectId);
 							if (config) {
 								const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
@@ -253,7 +256,7 @@ async function processUnindexedRecords(
 
 								logger.info("Successfully indexed file", {
 									fileId: file.id,
-									recordId: record.id,
+									contextEntryId: contextEntry.id,
 									projectId,
 								});
 							}
@@ -261,7 +264,7 @@ async function processUnindexedRecords(
 					} catch (processError) {
 						logger.error("Failed to process file for search", {
 							fileId: file.id,
-							recordId: record.id,
+							contextEntryId: contextEntry.id,
 							projectId,
 							error: processError instanceof Error
 								? processError.message
@@ -272,10 +275,10 @@ async function processUnindexedRecords(
 			}
 
 			// Process website attachments
-			const websites = Array.isArray(record.website)
-				? record.website
-				: record.website
-				? [record.website]
+			const websites = Array.isArray(contextEntry.website)
+				? contextEntry.website
+				: contextEntry.website
+				? [contextEntry.website]
 				: [];
 			for (const website of websites) {
 				if (
@@ -294,7 +297,7 @@ async function processUnindexedRecords(
 
 						if (!existingChunks || existingChunks.length === 0) {
 							// For files and websites, we need to create chunks manually
-							// since processContent tries to create record embeddings
+							// since processContent tries to create context entry embeddings
 							const config = await aiSearch.getSearchConfig(projectId);
 							if (config) {
 								const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
@@ -329,7 +332,7 @@ async function processUnindexedRecords(
 
 								logger.info("Successfully indexed website", {
 									websiteId: website.id,
-									recordId: record.id,
+									contextEntryId: contextEntry.id,
 									projectId,
 								});
 							}
@@ -337,7 +340,7 @@ async function processUnindexedRecords(
 					} catch (processError) {
 						logger.error("Failed to process website for search", {
 							websiteId: website.id,
-							recordId: record.id,
+							contextEntryId: contextEntry.id,
 							projectId,
 							error: processError instanceof Error
 								? processError.message
@@ -348,7 +351,7 @@ async function processUnindexedRecords(
 			}
 		}
 	} catch (error) {
-		logger.error("Error in processUnindexedRecords", {
+		logger.error("Error in processUnindexedContextEntries", {
 			error: error instanceof Error ? error.message : String(error),
 			projectId,
 		});
@@ -357,19 +360,19 @@ async function processUnindexedRecords(
 }
 
 /**
- * Fallback: Get record context directly from database when vector search fails
+ * Fallback: Get context entry context directly from database when vector search fails
  */
-async function getFallbackRecordContext(
+async function getFallbackContextEntryContext(
 	supabase: ReturnType<typeof getServiceClient>,
 	projectId: string,
 ): Promise<Array<{ text: string; source_type: string }>> {
 	try {
-		const { data: recordProjects, error: rpError } = await supabase
-			.from("record_project")
+		const { data: contextEntryProjects, error: rpError } = await supabase
+			.from("context_entry_project")
 			.select(
 				`
-				record_id,
-				record:record_id (
+				context_entry_id,
+				context_entry:context_entry_id (
 					id,
 					content,
 					file (
@@ -385,29 +388,34 @@ async function getFallbackRecordContext(
 			)
 			.eq("project_id", projectId)
 			.order("created_at", { ascending: false })
-			.limit(5); // Limit to 5 most recent records
+			.limit(5); // Limit to 5 most recent context entries
 
-		if (rpError || !recordProjects) {
+		if (rpError || !contextEntryProjects) {
 			return [];
 		}
 
 		const contextItems: Array<{ text: string; source_type: string }> = [];
 
-		for (const rp of recordProjects) {
-			const record = Array.isArray(rp.record) ? rp.record[0] : rp.record;
-			if (!record) continue;
+		for (const cep of contextEntryProjects) {
+			const contextEntry = Array.isArray(cep.context_entry)
+				? cep.context_entry[0]
+				: cep.context_entry;
+			if (!contextEntry) continue;
 
-			// Add record content
-			if (record.content) {
+			// Add context entry content
+			if (contextEntry.content) {
 				contextItems.push({
-					text: record.content.substring(0, 1000), // Limit length
-					source_type: "record",
+					text: contextEntry.content.substring(0, 1000), // Limit length
+					source_type: "context_entry",
 				});
 			}
 
 			// Add file content if available
-			if (record.file && Array.isArray(record.file) && record.file.length > 0) {
-				const file = record.file[0];
+			if (
+				contextEntry.file && Array.isArray(contextEntry.file) &&
+				contextEntry.file.length > 0
+			) {
+				const file = contextEntry.file[0];
 				if (file.extracted_text) {
 					contextItems.push({
 						text: file.extracted_text.substring(0, 1000),
@@ -418,11 +426,11 @@ async function getFallbackRecordContext(
 
 			// Add website content if available
 			if (
-				record.website &&
-				Array.isArray(record.website) &&
-				record.website.length > 0
+				contextEntry.website &&
+				Array.isArray(contextEntry.website) &&
+				contextEntry.website.length > 0
 			) {
-				const website = record.website[0];
+				const website = contextEntry.website[0];
 				if (website.extracted_content) {
 					contextItems.push({
 						text: website.extracted_content.substring(0, 1000),
@@ -434,7 +442,7 @@ async function getFallbackRecordContext(
 
 		return contextItems;
 	} catch (error) {
-		logger.error("Error in getFallbackRecordContext", {
+		logger.error("Error in getFallbackContextEntryContext", {
 			error: error instanceof Error ? error.message : String(error),
 			projectId,
 		});
@@ -520,13 +528,13 @@ Project Goal: ${projectGoal}
 
 Your role is to:
 1. Guide the conversation towards achieving the project goal
-2. Use the provided context from the user's records, files, and websites to provide informed responses
+2. Use the provided context from the user's context entries, files, and websites to provide informed responses
 3. Ask clarifying questions when needed
 4. Be concise but thorough in your responses
 
 ${
 			contextText
-				? `\nRelevant Context from Project Records:\n${contextText}`
+				? `\nRelevant Context from Project Context Entries:\n${contextText}`
 				: ""
 		}`;
 
@@ -698,7 +706,7 @@ app.post(
 			});
 		}
 
-		// 6. Search for relevant context from project records
+		// 6. Search for relevant context from project context entries
 		let contextChunks: Array<{ text: string; source_type: string }> = [];
 		try {
 			const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
@@ -725,8 +733,8 @@ app.post(
 				searchConfig = await aiSearch.getSearchConfig(conversation.project_id);
 			}
 
-			// Process any unindexed records for this project
-			await processUnindexedRecords(
+			// Process any unindexed context entries for this project
+			await processUnindexedContextEntries(
 				sbServiceClient,
 				aiSearch,
 				conversation.project_id,
@@ -736,7 +744,7 @@ app.post(
 			const searchResults = await aiSearch.searchContent(
 				input.message,
 				conversation.project_id,
-				["record", "file", "website"],
+				["context_entry", "file", "website"],
 				0.7, // Match threshold
 				10, // Max results
 			);
@@ -746,9 +754,9 @@ app.post(
 				source_type: result.source_type,
 			}));
 
-			// If no chunks found, try fallback: get records directly
+			// If no chunks found, try fallback: get context entries directly
 			if (contextChunks.length === 0) {
-				contextChunks = await getFallbackRecordContext(
+				contextChunks = await getFallbackContextEntryContext(
 					sbServiceClient,
 					conversation.project_id,
 				);
@@ -775,9 +783,9 @@ app.post(
 				projectId: conversation.project_id,
 			});
 
-			// Try fallback: get records directly
+			// Try fallback: get context entries directly
 			try {
-				contextChunks = await getFallbackRecordContext(
+				contextChunks = await getFallbackContextEntryContext(
 					sbServiceClient,
 					conversation.project_id,
 				);

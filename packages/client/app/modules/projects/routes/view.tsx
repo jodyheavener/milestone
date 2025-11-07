@@ -2,10 +2,10 @@ import { Form, Link, redirect } from "react-router";
 import { createPageTitle } from "@/lib";
 import { cn } from "@/lib";
 import { AuthContext } from "@/lib/supabase";
+import { getContextEntriesForProject } from "@/modules/context/api/context";
+import { ContextEntryListForProject } from "@/modules/context/ui/context-entry-list-for-project";
 import { getConversationsForProject } from "@/modules/conversations/api/conversations";
 import { ConversationList } from "@/modules/conversations/ui/conversation-list";
-import { getRecordsForProject } from "@/modules/records/api/records";
-import { RecordListForProject } from "@/modules/records/ui/record-list-for-project";
 import { getTasksForProject } from "@/modules/tasks/api/tasks";
 import { TaskList } from "@/modules/tasks/ui/task-list";
 import { deleteProject, getProject } from "../api/projects";
@@ -13,9 +13,9 @@ import type { Route } from "./+types/view";
 
 export async function loader({ context, params }: Route.LoaderArgs) {
 	const { supabase } = context.get(AuthContext);
-	const [project, records, tasks, conversations] = await Promise.all([
+	const [project, contextEntries, tasks, conversations] = await Promise.all([
 		getProject(supabase, params.id),
-		getRecordsForProject(supabase, params.id),
+		getContextEntriesForProject(supabase, params.id),
 		getTasksForProject(supabase, params.id),
 		getConversationsForProject(supabase, params.id),
 	]);
@@ -24,7 +24,7 @@ export async function loader({ context, params }: Route.LoaderArgs) {
 		throw redirect("/projects");
 	}
 
-	return { project, records, tasks, conversations };
+	return { project, contextEntries, tasks, conversations };
 }
 
 export async function action({ request, params, context }: Route.ActionArgs) {
@@ -47,7 +47,7 @@ export function meta({ loaderData }: Route.MetaArgs) {
 }
 
 export default function Component({ loaderData }: Route.ComponentProps) {
-	const { project, records, tasks, conversations } = loaderData;
+	const { project, contextEntries, tasks, conversations } = loaderData;
 
 	return (
 		<div className="p-8">
@@ -139,19 +139,22 @@ export default function Component({ loaderData }: Route.ComponentProps) {
 
 				<div className="space-y-6">
 					<div className="flex items-center justify-between">
-						<h2 className="text-xl font-semibold">Records</h2>
+						<h2 className="text-xl font-semibold">Context</h2>
 						<Link
-							to={`/records/new?project=${project.id}`}
+							to={`/context/new?project=${project.id}`}
 							className={cn(
 								"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
 								"h-9 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90"
 							)}
 						>
-							+ New Record
+							+ New Context Entry
 						</Link>
 					</div>
 
-					<RecordListForProject records={records} projectId={project.id} />
+					<ContextEntryListForProject
+						contextEntries={contextEntries}
+						projectId={project.id}
+					/>
 				</div>
 			</div>
 		</div>

@@ -1,4 +1,4 @@
--- AI Infrastructure: General AI infrastructure not specific to records or conversations
+-- AI Infrastructure: General AI infrastructure not specific to context entries or conversations
 -- This includes content chunks, search configuration, and general search functions
 
 -- ============================================================================
@@ -18,7 +18,7 @@ create table public.content_chunk (
   model           text,
   created_at      timestamptz not null default now(),
   
-  constraint content_chunk_source_type_check check (source_type in ('record', 'file', 'website'))
+  constraint content_chunk_source_type_check check (source_type in ('context_entry', 'file', 'website'))
 );
 
 -- Indexes: content chunks
@@ -64,19 +64,19 @@ create policy "Users can view content chunks for their own content"
   on public.content_chunk
   for select to authenticated
   using (
-    (source_type = 'record' and exists (
-      select 1 from public.record r 
-      where r.id = content_chunk.source_id and r.user_id = (select auth.uid())
+    (source_type = 'context_entry' and exists (
+      select 1 from public.context_entry ce 
+      where ce.id = content_chunk.source_id and ce.user_id = (select auth.uid())
     )) or
     (source_type = 'file' and exists (
       select 1 from public.file f
-      join public.record r on r.id = f.record_id
-      where f.id = content_chunk.source_id and r.user_id = (select auth.uid())
+      join public.context_entry ce on ce.id = f.context_entry_id
+      where f.id = content_chunk.source_id and ce.user_id = (select auth.uid())
     )) or
     (source_type = 'website' and exists (
       select 1 from public.website w
-      join public.record r on r.id = w.record_id
-      where w.id = content_chunk.source_id and r.user_id = (select auth.uid())
+      join public.context_entry ce on ce.id = w.context_entry_id
+      where w.id = content_chunk.source_id and ce.user_id = (select auth.uid())
     ))
   );
 
@@ -84,19 +84,19 @@ create policy "Users can create content chunks for their own content"
   on public.content_chunk
   for insert to authenticated
   with check (
-    (source_type = 'record' and exists (
-      select 1 from public.record r 
-      where r.id = content_chunk.source_id and r.user_id = (select auth.uid())
+    (source_type = 'context_entry' and exists (
+      select 1 from public.context_entry ce 
+      where ce.id = content_chunk.source_id and ce.user_id = (select auth.uid())
     )) or
     (source_type = 'file' and exists (
       select 1 from public.file f
-      join public.record r on r.id = f.record_id
-      where f.id = content_chunk.source_id and r.user_id = (select auth.uid())
+      join public.context_entry ce on ce.id = f.context_entry_id
+      where f.id = content_chunk.source_id and ce.user_id = (select auth.uid())
     )) or
     (source_type = 'website' and exists (
       select 1 from public.website w
-      join public.record r on r.id = w.record_id
-      where w.id = content_chunk.source_id and r.user_id = (select auth.uid())
+      join public.context_entry ce on ce.id = w.context_entry_id
+      where w.id = content_chunk.source_id and ce.user_id = (select auth.uid())
     ))
   );
 
@@ -104,19 +104,19 @@ create policy "Users can delete content chunks for their own content"
   on public.content_chunk
   for delete to authenticated
   using (
-    (source_type = 'record' and exists (
-      select 1 from public.record r 
-      where r.id = content_chunk.source_id and r.user_id = (select auth.uid())
+    (source_type = 'context_entry' and exists (
+      select 1 from public.context_entry ce 
+      where ce.id = content_chunk.source_id and ce.user_id = (select auth.uid())
     )) or
     (source_type = 'file' and exists (
       select 1 from public.file f
-      join public.record r on r.id = f.record_id
-      where f.id = content_chunk.source_id and r.user_id = (select auth.uid())
+      join public.context_entry ce on ce.id = f.context_entry_id
+      where f.id = content_chunk.source_id and ce.user_id = (select auth.uid())
     )) or
     (source_type = 'website' and exists (
       select 1 from public.website w
-      join public.record r on r.id = w.record_id
-      where w.id = content_chunk.source_id and r.user_id = (select auth.uid())
+      join public.context_entry ce on ce.id = w.context_entry_id
+      where w.id = content_chunk.source_id and ce.user_id = (select auth.uid())
     ))
   );
 
@@ -221,17 +221,17 @@ begin
     cc.chunk_index,
     1 - (cc.embedding <=> query_embedding) as similarity,
     case 
-      when cc.source_type = 'record' then r.metadata
-      when cc.source_type = 'file' then rf.metadata
-      when cc.source_type = 'website' then rw.metadata
+      when cc.source_type = 'context_entry' then ce.metadata
+      when cc.source_type = 'file' then cef.metadata
+      when cc.source_type = 'website' then cew.metadata
       else null
     end as metadata
   from public.content_chunk cc
-  left join public.record r on cc.source_type = 'record' and cc.source_id = r.id
+  left join public.context_entry ce on cc.source_type = 'context_entry' and cc.source_id = ce.id
   left join public.file f on cc.source_type = 'file' and cc.source_id = f.id
-  left join public.record rf on cc.source_type = 'file' and f.record_id = rf.id
+  left join public.context_entry cef on cc.source_type = 'file' and f.context_entry_id = cef.id
   left join public.website w on cc.source_type = 'website' and cc.source_id = w.id
-  left join public.record rw on cc.source_type = 'website' and w.record_id = rw.id
+  left join public.context_entry cew on cc.source_type = 'website' and w.context_entry_id = cew.id
   where cc.project_id = search_content_chunks.project_id
     and (source_types is null or cc.source_type = any(source_types))
     and cc.embedding is not null
@@ -287,17 +287,17 @@ begin
       (vector_weight * (1 - (cc.embedding <=> query_embedding)))
     ) as similarity,
     case 
-      when cc.source_type = 'record' then r.metadata
-      when cc.source_type = 'file' then rf.metadata
-      when cc.source_type = 'website' then rw.metadata
+      when cc.source_type = 'context_entry' then ce.metadata
+      when cc.source_type = 'file' then cef.metadata
+      when cc.source_type = 'website' then cew.metadata
       else null
     end as metadata
   from public.content_chunk cc
-  left join public.record r on cc.source_type = 'record' and cc.source_id = r.id
+  left join public.context_entry ce on cc.source_type = 'context_entry' and cc.source_id = ce.id
   left join public.file f on cc.source_type = 'file' and cc.source_id = f.id
-  left join public.record rf on cc.source_type = 'file' and f.record_id = rf.id
+  left join public.context_entry cef on cc.source_type = 'file' and f.context_entry_id = cef.id
   left join public.website w on cc.source_type = 'website' and cc.source_id = w.id
-  left join public.record rw on cc.source_type = 'website' and w.record_id = rw.id
+  left join public.context_entry cew on cc.source_type = 'website' and w.context_entry_id = cew.id
   where cc.project_id = search_content_hybrid.project_id
     and (source_types is null or cc.source_type = any(source_types))
     and cc.embedding is not null

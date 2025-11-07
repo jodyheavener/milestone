@@ -1,13 +1,13 @@
 import type { Tables, TablesInsert, TablesUpdate } from "@milestone/shared";
 
-export type Record = Tables<"record">;
-export type RecordInsert = TablesInsert<"record">;
-export type RecordUpdate = TablesUpdate<"record">;
-export type RecordProject = Tables<"record_project">;
+export type ContextEntry = Tables<"context_entry">;
+export type ContextEntryInsert = TablesInsert<"context_entry">;
+export type ContextEntryUpdate = TablesUpdate<"context_entry">;
+export type ContextEntryProject = Tables<"context_entry_project">;
 export type FileAttachment = Tables<"file">;
 export type WebsiteAttachment = Tables<"website">;
 
-export interface RecordWithProjects extends Record {
+export interface ContextEntryWithProjects extends ContextEntry {
 	projects?: Array<{
 		id: string;
 		title: string;
@@ -16,7 +16,7 @@ export interface RecordWithProjects extends Record {
 	website?: WebsiteAttachment;
 }
 
-export interface CreateRecordData {
+export interface CreateContextEntryData {
 	content: string;
 	projectIds?: string[];
 	attachment?: {
@@ -41,7 +41,7 @@ export interface CreateRecordData {
 	};
 }
 
-export interface UpdateRecordData {
+export interface UpdateContextEntryData {
 	content?: string;
 	projectIds?: string[];
 }

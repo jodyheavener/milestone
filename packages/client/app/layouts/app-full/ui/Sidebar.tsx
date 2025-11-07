@@ -18,7 +18,7 @@ export function Sidebar({ projects }: SidebarProps) {
 
 	const navigation = [
 		{ path: "/projects", label: "Projects", icon: Folder },
-		{ path: "/records", label: "Records", icon: FileText },
+		{ path: "/context", label: "Context", icon: FileText },
 	];
 
 	const { user } = useAuth();

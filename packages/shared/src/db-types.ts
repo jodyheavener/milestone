@@ -102,6 +102,111 @@ export type Database = {
 					},
 				];
 			};
+			context_entry: {
+				Row: {
+					content: string;
+					content_tsv: unknown;
+					created_at: string;
+					id: string;
+					metadata: Json | null;
+					updated_at: string;
+					user_id: string;
+				};
+				Insert: {
+					content: string;
+					content_tsv?: unknown;
+					created_at?: string;
+					id?: string;
+					metadata?: Json | null;
+					updated_at?: string;
+					user_id: string;
+				};
+				Update: {
+					content?: string;
+					content_tsv?: unknown;
+					created_at?: string;
+					id?: string;
+					metadata?: Json | null;
+					updated_at?: string;
+					user_id?: string;
+				};
+				Relationships: [];
+			};
+			context_entry_embedding: {
+				Row: {
+					context_entry_id: string;
+					created_at: string;
+					embedding: string | null;
+					id: string;
+					model: string;
+					project_id: string | null;
+				};
+				Insert: {
+					context_entry_id: string;
+					created_at?: string;
+					embedding?: string | null;
+					id?: string;
+					model: string;
+					project_id?: string | null;
+				};
+				Update: {
+					context_entry_id?: string;
+					created_at?: string;
+					embedding?: string | null;
+					id?: string;
+					model?: string;
+					project_id?: string | null;
+				};
+				Relationships: [
+					{
+						foreignKeyName: "context_entry_embedding_context_entry_id_fkey";
+						columns: ["context_entry_id"];
+						isOneToOne: false;
+						referencedRelation: "context_entry";
+						referencedColumns: ["id"];
+					},
+					{
+						foreignKeyName: "context_entry_embedding_project_id_fkey";
+						columns: ["project_id"];
+						isOneToOne: false;
+						referencedRelation: "project";
+						referencedColumns: ["id"];
+					},
+				];
+			};
+			context_entry_project: {
+				Row: {
+					context_entry_id: string;
+					created_at: string;
+					project_id: string;
+				};
+				Insert: {
+					context_entry_id: string;
+					created_at?: string;
+					project_id: string;
+				};
+				Update: {
+					context_entry_id?: string;
+					created_at?: string;
+					project_id?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: "context_entry_project_context_entry_id_fkey";
+						columns: ["context_entry_id"];
+						isOneToOne: false;
+						referencedRelation: "context_entry";
+						referencedColumns: ["id"];
+					},
+					{
+						foreignKeyName: "context_entry_project_project_id_fkey";
+						columns: ["project_id"];
+						isOneToOne: false;
+						referencedRelation: "project";
+						referencedColumns: ["id"];
+					},
+				];
+			};
 			conversation: {
 				Row: {
 					created_at: string;
@@ -246,6 +351,7 @@ export type Database = {
 			};
 			file: {
 				Row: {
+					context_entry_id: string;
 					created_at: string;
 					extracted_text: string | null;
 					extracted_text_tsv: unknown;
@@ -253,10 +359,10 @@ export type Database = {
 					id: string;
 					mime_type: string;
 					parser: string | null;
-					record_id: string;
 					storage_path: string;
 				};
 				Insert: {
+					context_entry_id: string;
 					created_at?: string;
 					extracted_text?: string | null;
 					extracted_text_tsv?: unknown;
@@ -264,10 +370,10 @@ export type Database = {
 					id?: string;
 					mime_type: string;
 					parser?: string | null;
-					record_id: string;
 					storage_path: string;
 				};
 				Update: {
+					context_entry_id?: string;
 					created_at?: string;
 					extracted_text?: string | null;
 					extracted_text_tsv?: unknown;
@@ -275,15 +381,14 @@ export type Database = {
 					id?: string;
 					mime_type?: string;
 					parser?: string | null;
-					record_id?: string;
 					storage_path?: string;
 				};
 				Relationships: [
 					{
-						foreignKeyName: "file_record_id_fkey";
-						columns: ["record_id"];
+						foreignKeyName: "file_context_entry_id_fkey";
+						columns: ["context_entry_id"];
 						isOneToOne: false;
-						referencedRelation: "record";
+						referencedRelation: "context_entry";
 						referencedColumns: ["id"];
 					},
 				];
@@ -350,111 +455,6 @@ export type Database = {
 					user_id?: string;
 				};
 				Relationships: [];
-			};
-			record: {
-				Row: {
-					content: string;
-					content_tsv: unknown;
-					created_at: string;
-					id: string;
-					metadata: Json | null;
-					updated_at: string;
-					user_id: string;
-				};
-				Insert: {
-					content: string;
-					content_tsv?: unknown;
-					created_at?: string;
-					id?: string;
-					metadata?: Json | null;
-					updated_at?: string;
-					user_id: string;
-				};
-				Update: {
-					content?: string;
-					content_tsv?: unknown;
-					created_at?: string;
-					id?: string;
-					metadata?: Json | null;
-					updated_at?: string;
-					user_id?: string;
-				};
-				Relationships: [];
-			};
-			record_embedding: {
-				Row: {
-					created_at: string;
-					embedding: string | null;
-					id: string;
-					model: string;
-					project_id: string | null;
-					record_id: string;
-				};
-				Insert: {
-					created_at?: string;
-					embedding?: string | null;
-					id?: string;
-					model: string;
-					project_id?: string | null;
-					record_id: string;
-				};
-				Update: {
-					created_at?: string;
-					embedding?: string | null;
-					id?: string;
-					model?: string;
-					project_id?: string | null;
-					record_id?: string;
-				};
-				Relationships: [
-					{
-						foreignKeyName: "record_embedding_project_id_fkey";
-						columns: ["project_id"];
-						isOneToOne: false;
-						referencedRelation: "project";
-						referencedColumns: ["id"];
-					},
-					{
-						foreignKeyName: "record_embedding_record_id_fkey";
-						columns: ["record_id"];
-						isOneToOne: false;
-						referencedRelation: "record";
-						referencedColumns: ["id"];
-					},
-				];
-			};
-			record_project: {
-				Row: {
-					created_at: string;
-					project_id: string;
-					record_id: string;
-				};
-				Insert: {
-					created_at?: string;
-					project_id: string;
-					record_id: string;
-				};
-				Update: {
-					created_at?: string;
-					project_id?: string;
-					record_id?: string;
-				};
-				Relationships: [
-					{
-						foreignKeyName: "record_project_project_id_fkey";
-						columns: ["project_id"];
-						isOneToOne: false;
-						referencedRelation: "project";
-						referencedColumns: ["id"];
-					},
-					{
-						foreignKeyName: "record_project_record_id_fkey";
-						columns: ["record_id"];
-						isOneToOne: false;
-						referencedRelation: "record";
-						referencedColumns: ["id"];
-					},
-				];
 			};
 			search_config: {
 				Row: {
@@ -770,40 +770,40 @@ export type Database = {
 			website: {
 				Row: {
 					address: string;
+					context_entry_id: string;
 					created_at: string;
 					extracted_content: string | null;
 					extracted_content_tsv: unknown;
 					id: string;
 					last_updated_at: string | null;
 					page_title: string | null;
-					record_id: string;
 				};
 				Insert: {
 					address: string;
+					context_entry_id: string;
 					created_at?: string;
 					extracted_content?: string | null;
 					extracted_content_tsv?: unknown;
 					id?: string;
 					last_updated_at?: string | null;
 					page_title?: string | null;
-					record_id: string;
 				};
 				Update: {
 					address?: string;
+					context_entry_id?: string;
 					created_at?: string;
 					extracted_content?: string | null;
 					extracted_content_tsv?: unknown;
 					id?: string;
 					last_updated_at?: string | null;
 					page_title?: string | null;
-					record_id?: string;
 				};
 				Relationships: [
 					{
-						foreignKeyName: "website_record_id_fkey";
-						columns: ["record_id"];
+						foreignKeyName: "website_context_entry_id_fkey";
+						columns: ["context_entry_id"];
 						isOneToOne: false;
-						referencedRelation: "record";
+						referencedRelation: "context_entry";
 						referencedColumns: ["id"];
 					},
 				];
@@ -881,9 +881,9 @@ export type Database = {
 					text: string;
 				}[];
 			};
-			search_similar_records: {
+			search_similar_context_entries: {
 				Args: {
-					exclude_record_id?: string;
+					exclude_context_entry_id?: string;
 					match_count?: number;
 					match_threshold?: number;
 					project_id: string;
@@ -891,9 +891,9 @@ export type Database = {
 				};
 				Returns: {
 					content: string;
+					context_entry_id: string;
 					id: string;
 					metadata: Json;
-					record_id: string;
 					similarity: number;
 				}[];
 			};

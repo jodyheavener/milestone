@@ -2,22 +2,22 @@ import { redirect } from "react-router";
 import { createPageTitle } from "@/lib";
 import { AuthContext } from "@/lib/supabase";
 import { getProjects } from "@/modules/projects/api/projects";
-import { getRecord, updateRecord } from "../api/records";
-import { EditRecordForm } from "../ui/edit-record-form";
+import { getContextEntry, updateContextEntry } from "../api/context";
+import { EditContextEntryForm } from "../ui/edit-context-entry-form";
 import type { Route } from "./+types/edit";
 
 export async function loader({ context, params }: Route.LoaderArgs) {
 	const { supabase } = context.get(AuthContext);
-	const [record, projects] = await Promise.all([
-		getRecord(supabase, params.id),
+	const [contextEntry, projects] = await Promise.all([
+		getContextEntry(supabase, params.id),
 		getProjects(supabase),
 	]);
 
-	if (!record) {
-		throw redirect("/records");
+	if (!contextEntry) {
+		throw redirect("/context");
 	}
 
-	return { record, projects };
+	return { contextEntry, projects };
 }
 
 export async function action({ request, params, context }: Route.ActionArgs) {
@@ -33,19 +33,22 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 	}
 
 	try {
-		await updateRecord(supabase, params.id, {
+		await updateContextEntry(supabase, params.id, {
 			content: content.toString().trim(),
 			projectIds: projectIds.filter(Boolean),
 		});
 
-		throw redirect(`/records/${params.id}`);
+		throw redirect(`/context/${params.id}`);
 	} catch (error) {
 		if (error instanceof Response) {
 			throw error;
 		}
 
 		return {
-			error: error instanceof Error ? error.message : "Failed to update record",
+			error:
+				error instanceof Error
+					? error.message
+					: "Failed to update context entry",
 		};
 	}
 }
@@ -53,7 +56,9 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 export function meta({ loaderData }: Route.MetaArgs) {
 	return [
 		{
-			title: createPageTitle(`Edit Record: ${loaderData.record.created_at}`),
+			title: createPageTitle(
+				`Edit Context Entry: ${loaderData.contextEntry.created_at}`
+			),
 		},
 	];
 }
@@ -62,11 +67,11 @@ export default function Component({
 	loaderData,
 	actionData,
 }: Route.ComponentProps) {
-	const { record, projects } = loaderData;
+	const { contextEntry, projects } = loaderData;
 
 	return (
-		<EditRecordForm
-			record={record}
+		<EditContextEntryForm
+			contextEntry={contextEntry}
 			projects={projects}
 			error={actionData?.error}
 		/>

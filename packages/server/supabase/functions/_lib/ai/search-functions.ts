@@ -10,9 +10,9 @@ export type SearchResult = {
 	metadata?: Json;
 };
 
-export type RecordSearchResult = {
+export type ContextEntrySearchResult = {
 	id: string;
-	record_id: string;
+	context_entry_id: string;
 	content: string;
 	similarity: number;
 	metadata?: Json;
@@ -41,12 +41,12 @@ export interface ContentSearchQuery {
 }
 
 /**
- * Search records using vector similarity
+ * Search context entries using vector similarity
  */
-export interface RecordSearchQuery {
+export interface ContextEntrySearchQuery {
 	queryEmbedding: number[];
 	projectId: string;
-	excludeRecordId?: string;
+	excludeContextEntryId?: string;
 	options?: SearchOptions;
 }
 

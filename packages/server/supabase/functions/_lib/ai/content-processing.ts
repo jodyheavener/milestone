@@ -3,12 +3,12 @@ import type { Database } from "@milestone/shared";
 export type ContentChunk = Database["public"]["Tables"]["content_chunk"]["Row"];
 export type ContentChunkInsert =
 	Database["public"]["Tables"]["content_chunk"]["Insert"];
-export type RecordEmbedding =
-	Database["public"]["Tables"]["record_embedding"]["Row"];
-export type RecordEmbeddingInsert =
-	Database["public"]["Tables"]["record_embedding"]["Insert"];
+export type ContextEntryEmbedding =
+	Database["public"]["Tables"]["context_entry_embedding"]["Row"];
+export type ContextEntryEmbeddingInsert =
+	Database["public"]["Tables"]["context_entry_embedding"]["Insert"];
 
-export type SourceType = "record" | "file" | "website";
+export type SourceType = "context_entry" | "file" | "website";
 
 export interface ChunkingOptions {
 	chunkSize: number;
@@ -17,7 +17,7 @@ export interface ChunkingOptions {
 
 export interface ContentProcessingResult {
 	chunks: ContentChunkInsert[];
-	recordEmbedding: RecordEmbeddingInsert;
+	contextEntryEmbedding: ContextEntryEmbeddingInsert;
 }
 
 export interface EmbeddingProvider {
@@ -93,22 +93,22 @@ export async function createContentChunks(
 }
 
 /**
- * Creates a record embedding for the full content
+ * Creates a context entry embedding for the full content
  */
-export async function createRecordEmbedding(
-	recordId: string,
+export async function createContextEntryEmbedding(
+	contextEntryId: string,
 	projectId: string,
 	content: string,
 	embeddingProvider: EmbeddingProvider,
 	embeddingModel: string,
-): Promise<RecordEmbeddingInsert> {
+): Promise<ContextEntryEmbeddingInsert> {
 	const embedding = await embeddingProvider.generateEmbedding(
 		content,
 		embeddingModel,
 	);
 
 	return {
-		record_id: recordId,
+		context_entry_id: contextEntryId,
 		project_id: projectId,
 		embedding: `[${embedding.join(",")}]`, // Convert array to PostgreSQL vector format
 		model: embeddingModel,
@@ -116,7 +116,7 @@ export async function createRecordEmbedding(
 }
 
 /**
- * Processes content for search - creates both chunks and record embedding
+ * Processes content for search - creates both chunks and context entry embedding
  */
 export async function processContentForSearch(
 	sourceType: SourceType,
@@ -137,8 +137,8 @@ export async function processContentForSearch(
 		embeddingModel,
 	);
 
-	const recordEmbedding = await createRecordEmbedding(
-		sourceId, // For records, sourceId is the recordId
+	const contextEntryEmbedding = await createContextEntryEmbedding(
+		sourceId, // For context entries, sourceId is the contextEntryId
 		projectId,
 		content,
 		embeddingProvider,
@@ -147,7 +147,7 @@ export async function processContentForSearch(
 
 	return {
 		chunks,
-		recordEmbedding,
+		contextEntryEmbedding,
 	};
 }
 

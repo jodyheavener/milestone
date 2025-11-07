@@ -2,8 +2,8 @@ import { redirect, useSearchParams } from "react-router";
 import { createPageTitle } from "@/lib";
 import { AuthContext } from "@/lib/supabase";
 import { getProjects } from "@/modules/projects/api/projects";
-import { createRecord } from "../api/records";
-import { NewRecordForm } from "../ui/new-record-form";
+import { createContextEntry } from "../api/context";
+import { NewContextEntryForm } from "../ui/new-context-entry-form";
 import type { Route } from "./+types/new";
 
 export async function loader({ context }: Route.LoaderArgs) {
@@ -65,20 +65,20 @@ export async function action({ request, context }: Route.ActionArgs) {
 				}
 			: undefined;
 
-		await createRecord(supabase, user, {
+		await createContextEntry(supabase, user, {
 			content: content.toString().trim(),
 			projectIds: projectIds.filter(Boolean),
 			attachment: attachmentData,
 		});
 
-		throw redirect("/records");
+		throw redirect("/context");
 	} catch (error) {
 		// Re-throw redirects immediately without logging
 		if (error instanceof Response) {
 			throw error;
 		}
 
-		console.error("Error creating record:", error);
+		console.error("Error creating context entry:", error);
 
 		// Log more details about the error for debugging
 		if (error instanceof Error) {
@@ -90,7 +90,10 @@ export async function action({ request, context }: Route.ActionArgs) {
 		}
 
 		return {
-			error: error instanceof Error ? error.message : "Failed to create record",
+			error:
+				error instanceof Error
+					? error.message
+					: "Failed to create context entry",
 		};
 	}
 }
@@ -98,7 +101,7 @@ export async function action({ request, context }: Route.ActionArgs) {
 export function meta({}: Route.MetaArgs) {
 	return [
 		{
-			title: createPageTitle("New Record"),
+			title: createPageTitle("New Context Entry"),
 		},
 	];
 }
@@ -118,7 +121,7 @@ export default function Component({
 			: [];
 
 	return (
-		<NewRecordForm
+		<NewContextEntryForm
 			projects={projects}
 			initialProjectIds={initialProjectIds}
 			error={actionData?.error}

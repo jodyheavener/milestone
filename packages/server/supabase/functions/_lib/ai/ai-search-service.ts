@@ -16,14 +16,18 @@ import {
 	type SearchConfigOptions,
 } from "./search-config.ts";
 import {
+	type ContextEntrySearchResult,
 	type ConversationSearchQuery,
 	embeddingToVector,
-	type RecordSearchResult,
 	type SearchResult,
 } from "./search-functions.ts";
 
 // Re-export types for external use
-export type { ConversationSearchQuery, EmbeddingProvider };
+export type {
+	ContextEntrySearchResult,
+	ConversationSearchQuery,
+	EmbeddingProvider,
+};
 
 export class AISearchService {
 	private conversationSearch: ConversationSearchService;
@@ -123,14 +127,14 @@ export class AISearchService {
 			);
 		}
 
-		// Insert record embedding
+		// Insert context entry embedding
 		const { error: embeddingError } = await this.supabase
-			.from("record_embedding")
-			.insert(result.recordEmbedding);
+			.from("context_entry_embedding")
+			.insert(result.contextEntryEmbedding);
 
 		if (embeddingError) {
 			throw new Error(
-				`Failed to insert record embedding: ${embeddingError.message}`,
+				`Failed to insert context entry embedding: ${embeddingError.message}`,
 			);
 		}
 	}
@@ -189,15 +193,15 @@ export class AISearchService {
 	}
 
 	/**
-	 * Search similar records
+	 * Search similar context entries
 	 */
-	async searchSimilarRecords(
+	async searchSimilarContextEntries(
 		query: string,
 		projectId: string,
-		excludeRecordId?: string,
+		excludeContextEntryId?: string,
 		matchThreshold: number = 0.8,
 		matchCount: number = 5,
-	): Promise<RecordSearchResult[]> {
+	): Promise<ContextEntrySearchResult[]> {
 		// Generate query embedding
 		const queryEmbedding = await this.embeddingProvider.generateEmbedding(
 			query,
@@ -205,19 +209,22 @@ export class AISearchService {
 		);
 
 		// Search using database function
-		const { data, error } = await this.supabase.rpc("search_similar_records", {
-			query_embedding: embeddingToVector(queryEmbedding),
-			project_id: projectId,
-			exclude_record_id: excludeRecordId,
-			match_threshold: matchThreshold,
-			match_count: matchCount,
-		});
+		const { data, error } = await this.supabase.rpc(
+			"search_similar_context_entries",
+			{
+				query_embedding: embeddingToVector(queryEmbedding),
+				project_id: projectId,
+				exclude_context_entry_id: excludeContextEntryId,
+				match_threshold: matchThreshold,
+				match_count: matchCount,
+			},
+		);
 
 		if (error) {
-			throw new Error(`Record search failed: ${error.message}`);
+			throw new Error(`Context entry search failed: ${error.message}`);
 		}
 
-		return (data as RecordSearchResult[]) || [];
+		return (data as ContextEntrySearchResult[]) || [];
 	}
 
 	/**
@@ -277,16 +284,18 @@ export class AISearchService {
 	}
 
 	/**
-	 * Delete record embedding
+	 * Delete context entry embedding
 	 */
-	async deleteRecordEmbedding(recordId: string): Promise<void> {
+	async deleteContextEntryEmbedding(contextEntryId: string): Promise<void> {
 		const { error } = await this.supabase
-			.from("record_embedding")
+			.from("context_entry_embedding")
 			.delete()
-			.eq("record_id", recordId);
+			.eq("context_entry_id", contextEntryId);
 
 		if (error) {
-			throw new Error(`Failed to delete record embedding: ${error.message}`);
+			throw new Error(
+				`Failed to delete context entry embedding: ${error.message}`,
+			);
 		}
 	}
 
@@ -301,8 +310,8 @@ export class AISearchService {
 	): Promise<void> {
 		// Delete existing chunks and embeddings
 		await this.deleteContentChunks(sourceType, sourceId);
-		if (sourceType === "record") {
-			await this.deleteRecordEmbedding(sourceId);
+		if (sourceType === "context_entry") {
+			await this.deleteContextEntryEmbedding(sourceId);
 		}
 
 		// Process new content

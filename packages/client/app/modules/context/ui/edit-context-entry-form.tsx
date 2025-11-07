@@ -3,33 +3,33 @@ import { Form, Link, useNavigation } from "react-router";
 import { cn } from "@/lib";
 import type { Project } from "@/modules/projects/model/types";
 import { formatFileSize } from "../../../lib/formatters";
-import type { RecordWithProjects } from "../model/types";
+import type { ContextEntryWithProjects } from "../model/types";
 import { ProjectSelector } from "./project-selector";
 
-interface EditRecordFormProps {
-	record: RecordWithProjects;
+interface EditContextEntryFormProps {
+	contextEntry: ContextEntryWithProjects;
 	projects: Project[];
 	error?: string;
 }
 
-export function EditRecordForm({
-	record,
+export function EditContextEntryForm({
+	contextEntry,
 	projects,
 	error,
-}: EditRecordFormProps) {
+}: EditContextEntryFormProps) {
 	const navigation = useNavigation();
 	const isSubmitting = navigation.state === "submitting";
 	const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>(
-		() => record.projects?.map((p: { id: string }) => p.id) || []
+		() => contextEntry.projects?.map((p: { id: string }) => p.id) || []
 	);
 
 	return (
 		<div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
 			<div className="w-full max-w-2xl p-8 space-y-6">
 				<div>
-					<h1 className="text-2xl font-bold">Edit Record</h1>
+					<h1 className="text-2xl font-bold">Edit Context Entry</h1>
 					<p className="mt-2 text-muted-foreground">
-						Update your record details
+						Update your context entry details
 					</p>
 				</div>
 
@@ -50,7 +50,7 @@ export function EditRecordForm({
 						<textarea
 							id="content"
 							name="content"
-							defaultValue={record.content}
+							defaultValue={contextEntry.content}
 							required
 							rows={8}
 							className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[120px] resize-none"
@@ -64,7 +64,7 @@ export function EditRecordForm({
 					/>
 
 					{/* Attachment context (read-only) */}
-					{(record.file || record.website) && (
+					{(contextEntry.file || contextEntry.website) && (
 						<div className="space-y-3">
 							<div>
 								<label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
@@ -75,7 +75,7 @@ export function EditRecordForm({
 								</p>
 							</div>
 							<div className="p-3 border border-border rounded-lg bg-muted/50">
-								{record.file ? (
+								{contextEntry.file ? (
 									<div className="space-y-2">
 										<div className="flex items-center justify-between">
 											<div>
@@ -83,25 +83,25 @@ export function EditRecordForm({
 													File Attachment
 												</div>
 												<div className="text-xs text-muted-foreground">
-													{record.file.mime_type} •{" "}
-													{formatFileSize(record.file.file_size)}
+													{contextEntry.file.mime_type} •{" "}
+													{formatFileSize(contextEntry.file.file_size)}
 												</div>
 											</div>
 										</div>
 									</div>
-								) : record.website ? (
+								) : contextEntry.website ? (
 									<div className="space-y-2">
 										<div className="text-sm font-medium">Website Reference</div>
 										<div className="text-xs text-muted-foreground">
-											{record.website.page_title || "Untitled"}
+											{contextEntry.website.page_title || "Untitled"}
 										</div>
 										<a
-											href={record.website.address}
+											href={contextEntry.website.address}
 											target="_blank"
 											rel="noopener noreferrer"
 											className="text-sm text-primary hover:underline"
 										>
-											{record.website.address}
+											{contextEntry.website.address}
 										</a>
 									</div>
 								) : null}
@@ -131,7 +131,7 @@ export function EditRecordForm({
 							{isSubmitting ? "Saving..." : "Save Changes"}
 						</button>
 						<Link
-							to={`/records/${record.id}`}
+							to={`/context/${contextEntry.id}`}
 							className={cn(
 								"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
 								"h-10 px-4 py-2 bg-secondary text-secondary-foreground hover:bg-secondary/80"

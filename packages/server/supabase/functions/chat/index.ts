@@ -23,7 +23,7 @@ app.options("*", () => new Response(null, { status: 204 }));
 /**
  * Chat endpoint for AI-powered conversations in projects
  * - Authorizes operation (gated by subscription)
- * - Retrieves relevant context from project records
+ * - Retrieves relevant context from project context entries
  * - Generates AI response using OpenAI
  * - Stores conversation entries
  * - Generates title for new conversations
@@ -164,7 +164,7 @@ app.post(
 			});
 		}
 
-		// Get relevant context from project records
+		// Get relevant context from project context entries
 		const context = await getProjectContext(
 			sbUserClient,
 			input.projectId,
@@ -186,11 +186,11 @@ Project Goal: ${project.goal}
 
 Your role is to:
 1. Guide the conversation towards achieving this project goal
-2. Use the provided context from the user's records to inform your responses
+2. Use the provided context from the user's context entries to inform your responses
 3. Be concise, helpful, and focused on actionable insights
 4. Ask clarifying questions when needed to better understand the user's needs
 
-Context from the user's records will be provided to help you give informed responses.`;
+Context from the user's context entries will be provided to help you give informed responses.`;
 
 		messages.push({
 			role: "system",
@@ -205,7 +205,7 @@ Context from the user's records will be provided to help you give informed respo
 			messages.push({
 				role: "user",
 				content:
-					`Here is relevant context from my records:\n\n${contextText}\n\n---\n\nNow, ${input.message}`,
+					`Here is relevant context from my context entries:\n\n${contextText}\n\n---\n\nNow, ${input.message}`,
 			});
 		} else {
 			messages.push({

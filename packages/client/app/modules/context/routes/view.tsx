@@ -1,19 +1,19 @@
 import { redirect } from "react-router";
 import { createPageTitle } from "@/lib";
 import { AuthContext } from "@/lib/supabase";
-import { deleteRecord, getRecord } from "../api/records";
-import { RecordView } from "../ui/record-view";
+import { deleteContextEntry, getContextEntry } from "../api/context";
+import { ContextEntryView } from "../ui/context-entry-view";
 import type { Route } from "./+types/view";
 
 export async function loader({ context, params }: Route.LoaderArgs) {
 	const { supabase } = context.get(AuthContext);
-	const record = await getRecord(supabase, params.id);
+	const contextEntry = await getContextEntry(supabase, params.id);
 
-	if (!record) {
-		throw redirect("/records");
+	if (!contextEntry) {
+		throw redirect("/context");
 	}
 
-	return { record };
+	return { contextEntry };
 }
 
 export async function action({ request, params, context }: Route.ActionArgs) {
@@ -22,21 +22,23 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 	const intent = formData.get("intent");
 
 	if (intent === "delete") {
-		await deleteRecord(supabase, params.id);
-		throw redirect("/records");
+		await deleteContextEntry(supabase, params.id);
+		throw redirect("/context");
 	}
 }
 
 export function meta({ loaderData }: Route.MetaArgs) {
 	return [
 		{
-			title: createPageTitle(`Record: ${loaderData.record.created_at}`),
+			title: createPageTitle(
+				`Context Entry: ${loaderData.contextEntry.created_at}`
+			),
 		},
 	];
 }
 
 export default function Component({ loaderData }: Route.ComponentProps) {
-	const { record } = loaderData;
+	const { contextEntry } = loaderData;
 
-	return <RecordView record={record} />;
+	return <ContextEntryView contextEntry={contextEntry} />;
 }

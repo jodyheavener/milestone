@@ -37,11 +37,11 @@ const routes: RouteConfig = [
 				]),
 			]),
 
-			...prefix("records", [
-				index("./modules/records/routes/list.tsx"),
-				route("new", "./modules/records/routes/new.tsx"),
-				route(":id", "./modules/records/routes/view.tsx"),
-				route(":id/edit", "./modules/records/routes/edit.tsx"),
+			...prefix("context", [
+				index("./modules/context/routes/list.tsx"),
+				route("new", "./modules/context/routes/new.tsx"),
+				route(":id", "./modules/context/routes/view.tsx"),
+				route(":id/edit", "./modules/context/routes/edit.tsx"),
 			]),
 
 			...prefix("tasks", [

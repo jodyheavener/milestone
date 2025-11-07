@@ -12,22 +12,22 @@ import {
 } from "../api/attachments";
 import { ProjectSelector } from "./project-selector";
 
-interface NewRecordFormProps {
+interface NewContextEntryFormProps {
 	projects: Project[];
 	initialProjectIds?: string[];
 	error?: string;
 }
 
-export function NewRecordForm({
+export function NewContextEntryForm({
 	projects,
 	initialProjectIds = [],
 	error,
-}: NewRecordFormProps) {
+}: NewContextEntryFormProps) {
 	const supabase = makeBrowserClient();
 	const navigation = useNavigation();
 	const isSubmitting = navigation.state === "submitting";
 
-	// Record creation method
+	// Context entry creation method
 	const [creationMethod, setCreationMethod] = useState<
 		"file" | "website" | "manual" | null
 	>(null);
@@ -103,9 +103,9 @@ export function NewRecordForm({
 		<div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
 			<div className="w-full max-w-2xl p-8 space-y-6">
 				<div className="text-center">
-					<h1 className="text-2xl font-bold">New Record</h1>
+					<h1 className="text-2xl font-bold">New Context Entry</h1>
 					<p className="mt-2 text-muted-foreground">
-						Create a new record to track your milestones
+						Create a new context entry to track your milestones
 					</p>
 				</div>
 
@@ -116,11 +116,11 @@ export function NewRecordForm({
 						</div>
 					)}
 
-					{/* Record Creation Method Selection */}
+					{/* Context Entry Creation Method Selection */}
 					{!creationMethod && (
 						<div className="space-y-3">
 							<label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-								How would you like to create this record?
+								How would you like to create this context entry?
 							</label>
 							<div className="grid grid-cols-1 gap-3">
 								<button
@@ -145,7 +145,7 @@ export function NewRecordForm({
 								>
 									<div className="font-medium">🌐 Website Reference</div>
 									<div className="text-sm text-muted-foreground mt-1">
-										Add a website URL as a reference to your record
+										Add a website URL as a reference to your context entry
 									</div>
 								</button>
 								<button
@@ -157,7 +157,7 @@ export function NewRecordForm({
 								>
 									<div className="font-medium">✍️ Manual Entry</div>
 									<div className="text-sm text-muted-foreground mt-1">
-										Write your record content manually
+										Write your context entry content manually
 									</div>
 								</button>
 							</div>
@@ -328,7 +328,7 @@ export function NewRecordForm({
 								value={content}
 								onChange={(e) => setContent(e.target.value)}
 								className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[120px] resize-none"
-								placeholder="Enter your record content here..."
+								placeholder="Enter your context entry content here..."
 							/>
 						</div>
 					) : null}
@@ -421,10 +421,10 @@ export function NewRecordForm({
 									"h-10 px-4 py-2 flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
 								)}
 							>
-								{isSubmitting ? "Creating..." : "Create Record"}
+								{isSubmitting ? "Creating..." : "Create Context Entry"}
 							</button>
 							<Link
-								to="/records"
+								to="/context entrys"
 								className={cn(
 									"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
 									"h-10 px-4 py-2 bg-secondary text-secondary-foreground hover:bg-secondary/80"

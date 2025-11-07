@@ -1,22 +1,22 @@
 import type { User } from "@supabase/supabase-js";
 import type { SupabaseClient } from "@/lib/supabase";
 import type {
-	CreateRecordData,
-	Record,
-	RecordWithProjects,
-	UpdateRecordData,
+	ContextEntry,
+	ContextEntryWithProjects,
+	CreateContextEntryData,
+	UpdateContextEntryData,
 } from "../model/types";
 
 /**
- * Create a new record
+ * Create a new context entry
  */
-export async function createRecord(
+export async function createContextEntry(
 	supabase: SupabaseClient,
 	user: User,
-	data: CreateRecordData
-): Promise<Record> {
-	const { data: record, error } = await supabase
-		.from("record")
+	data: CreateContextEntryData
+): Promise<ContextEntry> {
+	const { data: contextEntry, error } = await supabase
+		.from("context_entry")
 		.insert({
 			content: data.content,
 			user_id: user.id,
@@ -30,14 +30,14 @@ export async function createRecord(
 
 	// If project IDs are provided, create the associations
 	if (data.projectIds && data.projectIds.length > 0) {
-		const recordProjectInserts = data.projectIds.map((projectId) => ({
-			record_id: record.id,
+		const contextEntryProjectInserts = data.projectIds.map((projectId) => ({
+			context_entry_id: contextEntry.id,
 			project_id: projectId,
 		}));
 
 		const { error: linkError } = await supabase
-			.from("record_project")
-			.insert(recordProjectInserts);
+			.from("context_entry_project")
+			.insert(contextEntryProjectInserts);
 
 		if (linkError) {
 			throw linkError;
@@ -56,11 +56,12 @@ export async function createRecord(
 				data.attachment.file?.name ||
 				"unknown";
 			const storagePath =
-				data.attachment.parsedData?.storagePath || `${record.id}/${fileName}`;
+				data.attachment.parsedData?.storagePath ||
+				`${contextEntry.id}/${fileName}`;
 
-			// Create file attachment record with parsed data
+			// Create file attachment context entry with parsed data
 			const { error: fileError } = await supabase.from("file").insert({
-				record_id: record.id,
+				context_entry_id: contextEntry.id,
 				mime_type:
 					data.attachment.fileMetadata?.type ||
 					data.attachment.file?.type ||
@@ -83,8 +84,11 @@ export async function createRecord(
 					.upload(storagePath, data.attachment.file);
 
 				if (uploadError) {
-					// If upload fails, clean up the database record
-					await supabase.from("file").delete().eq("record_id", record.id);
+					// If upload fails, clean up the database context entry
+					await supabase
+						.from("file")
+						.delete()
+						.eq("context_entry_id", contextEntry.id);
 					throw uploadError;
 				}
 			}
@@ -92,9 +96,9 @@ export async function createRecord(
 			data.attachment.type === "website" &&
 			data.attachment.websiteUrl
 		) {
-			// Create website attachment record with scanned data
+			// Create website attachment context entry with scanned data
 			const { error: websiteError } = await supabase.from("website").insert({
-				record_id: record.id,
+				context_entry_id: contextEntry.id,
 				address: data.attachment.websiteUrl,
 				page_title: data.attachment.websiteData?.pageTitle || "Untitled",
 				extracted_content: data.attachment.websiteData?.extractedContent || "",
@@ -106,21 +110,21 @@ export async function createRecord(
 		}
 	}
 
-	return record;
+	return contextEntry;
 }
 
 /**
- * Get all records for the current user
+ * Get all context entries for the current user
  */
-export async function getRecords(
+export async function getContextEntries(
 	supabase: SupabaseClient
-): Promise<RecordWithProjects[]> {
-	const { data: records, error } = await supabase
-		.from("record")
+): Promise<ContextEntryWithProjects[]> {
+	const { data: contextEntries, error } = await supabase
+		.from("context_entry")
 		.select(
 			`
 			*,
-			record_project (
+			context_entry_project (
 				project_id,
 				project:project_id (
 					id,
@@ -140,31 +144,33 @@ export async function getRecords(
 	}
 
 	// Transform the data to flatten the project information
-	return records.map((record) => ({
-		...record,
+	return contextEntries.map((contextEntry) => ({
+		...contextEntry,
 		projects:
-			record.record_project?.map((rp) => rp.project).filter(Boolean) || [],
-		file: record.file?.[0] || undefined,
-		website: record.website?.[0] || undefined,
+			contextEntry.context_entry_project
+				?.map((cep) => cep.project)
+				.filter(Boolean) || [],
+		file: contextEntry.file?.[0] || undefined,
+		website: contextEntry.website?.[0] || undefined,
 	}));
 }
 
 /**
- * Get records for a specific project
+ * Get context entries for a specific project
  */
-export async function getRecordsForProject(
+export async function getContextEntriesForProject(
 	supabase: SupabaseClient,
 	projectId: string
-): Promise<RecordWithProjects[]> {
-	// Get records that are either:
+): Promise<ContextEntryWithProjects[]> {
+	// Get context entries that are either:
 	// 1. Linked to this specific project
 	// 2. Not linked to any project (available to all projects)
-	const { data: records, error } = await supabase
-		.from("record")
+	const { data: contextEntries, error } = await supabase
+		.from("context_entry")
 		.select(
 			`
 			*,
-			record_project!inner (
+			context_entry_project!inner (
 				project_id,
 				project:project_id (
 					id,
@@ -173,7 +179,7 @@ export async function getRecordsForProject(
 			)
 		`
 		)
-		.eq("record_project.project_id", projectId)
+		.eq("context_entry_project.project_id", projectId)
 		.order("created_at", {
 			ascending: false,
 		});
@@ -182,13 +188,13 @@ export async function getRecordsForProject(
 		throw error;
 	}
 
-	// Also get records that are not linked to any project (available to all)
-	const { data: unlinkedRecords, error: unlinkedError } = await supabase
-		.from("record")
+	// Also get context entries that are not linked to any project (available to all)
+	const { data: unlinkedContextEntries, error: unlinkedError } = await supabase
+		.from("context_entry")
 		.select(
 			`
 			*,
-			record_project (
+			context_entry_project (
 				project_id,
 				project:project_id (
 					id,
@@ -197,7 +203,7 @@ export async function getRecordsForProject(
 			)
 		`
 		)
-		.is("record_project", null)
+		.is("context_entry_project", null)
 		.order("created_at", {
 			ascending: false,
 		});
@@ -207,34 +213,36 @@ export async function getRecordsForProject(
 	}
 
 	// Combine and transform the data
-	const allRecords = [
-		...records.map((record) => ({
-			...record,
+	const allContextEntries = [
+		...contextEntries.map((contextEntry) => ({
+			...contextEntry,
 			projects:
-				record.record_project?.map((rp) => rp.project).filter(Boolean) || [],
+				contextEntry.context_entry_project
+					?.map((cep) => cep.project)
+					.filter(Boolean) || [],
 		})),
-		...unlinkedRecords.map((record) => ({
-			...record,
+		...unlinkedContextEntries.map((contextEntry) => ({
+			...contextEntry,
 			projects: [],
 		})),
 	];
 
-	return allRecords;
+	return allContextEntries;
 }
 
 /**
- * Get a record by ID
+ * Get a context entry by ID
  */
-export async function getRecord(
+export async function getContextEntry(
 	supabase: SupabaseClient,
 	id: string
-): Promise<RecordWithProjects | null> {
-	const { data: record, error } = await supabase
-		.from("record")
+): Promise<ContextEntryWithProjects | null> {
+	const { data: contextEntry, error } = await supabase
+		.from("context_entry")
 		.select(
 			`
 			*,
-			record_project (
+			context_entry_project (
 				project_id,
 				project:project_id (
 					id,
@@ -257,26 +265,28 @@ export async function getRecord(
 	}
 
 	return {
-		...record,
+		...contextEntry,
 		projects:
-			record.record_project?.map((rp) => rp.project).filter(Boolean) || [],
-		file: record.file?.[0] || undefined,
-		website: record.website?.[0] || undefined,
+			contextEntry.context_entry_project
+				?.map((cep) => cep.project)
+				.filter(Boolean) || [],
+		file: contextEntry.file?.[0] || undefined,
+		website: contextEntry.website?.[0] || undefined,
 	};
 }
 
 /**
- * Update a record
+ * Update a context entry
  */
-export async function updateRecord(
+export async function updateContextEntry(
 	supabase: SupabaseClient,
 	id: string,
-	data: UpdateRecordData
-): Promise<RecordWithProjects> {
-	// Update the record content if provided
+	data: UpdateContextEntryData
+): Promise<ContextEntryWithProjects> {
+	// Update the context entry content if provided
 	if (data.content !== undefined) {
 		const { error } = await supabase
-			.from("record")
+			.from("context_entry")
 			.update({ content: data.content })
 			.eq("id", id)
 			.select()
@@ -291,9 +301,9 @@ export async function updateRecord(
 	if (data.projectIds !== undefined) {
 		// First, delete all existing associations
 		const { error: deleteError } = await supabase
-			.from("record_project")
+			.from("context_entry_project")
 			.delete()
-			.eq("record_id", id);
+			.eq("context_entry_id", id);
 
 		if (deleteError) {
 			throw deleteError;
@@ -301,14 +311,14 @@ export async function updateRecord(
 
 		// Then create new associations if project IDs are provided
 		if (data.projectIds.length > 0) {
-			const recordProjectInserts = data.projectIds.map((projectId) => ({
-				record_id: id,
+			const contextEntryProjectInserts = data.projectIds.map((projectId) => ({
+				context_entry_id: id,
 				project_id: projectId,
 			}));
 
 			const { error: insertError } = await supabase
-				.from("record_project")
-				.insert(recordProjectInserts);
+				.from("context_entry_project")
+				.insert(contextEntryProjectInserts);
 
 			if (insertError) {
 				throw insertError;
@@ -316,18 +326,18 @@ export async function updateRecord(
 		}
 	}
 
-	// Return the updated record with projects
-	return getRecord(supabase, id) as Promise<RecordWithProjects>;
+	// Return the updated context entry with projects
+	return getContextEntry(supabase, id) as Promise<ContextEntryWithProjects>;
 }
 
 /**
- * Delete a record
+ * Delete a context entry
  */
-export async function deleteRecord(
+export async function deleteContextEntry(
 	supabase: SupabaseClient,
 	id: string
 ): Promise<void> {
-	const { error } = await supabase.from("record").delete().eq("id", id);
+	const { error } = await supabase.from("context_entry").delete().eq("id", id);
 
 	if (error) {
 		throw error;

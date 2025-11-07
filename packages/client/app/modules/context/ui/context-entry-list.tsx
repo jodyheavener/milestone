@@ -1,17 +1,18 @@
 import { Link } from "react-router";
 import { cn } from "@/lib";
-import type { RecordWithProjects } from "../model/types";
+import type { ContextEntryWithProjects } from "../model/types";
 
-interface RecordListProps {
-	records: RecordWithProjects[];
+interface ContextEntryListProps {
+	contextEntries: ContextEntryWithProjects[];
 }
 
-export function RecordList({ records }: RecordListProps) {
-	if (records.length === 0) {
+export function ContextEntryList({ contextEntries }: ContextEntryListProps) {
+	if (contextEntries.length === 0) {
 		return (
 			<div className="text-center py-12">
 				<p className="text-muted-foreground">
-					No records yet. Create your first record to get started!
+					No context entries yet. Create your first context entry to get
+					started!
 				</p>
 			</div>
 		);
@@ -19,24 +20,24 @@ export function RecordList({ records }: RecordListProps) {
 
 	return (
 		<div className="space-y-4">
-			{records.map((record) => (
+			{contextEntries.map((contextEntry) => (
 				<Link
-					key={record.id}
-					to={`/records/${record.id}`}
+					key={contextEntry.id}
+					to={`/context/${contextEntry.id}`}
 					className={cn(
 						"block p-6 rounded-lg border border-border bg-card hover:bg-accent transition-colors"
 					)}
 				>
 					<div className="space-y-2">
 						<div className="text-sm text-muted-foreground">
-							{new Date(record.created_at).toLocaleDateString()}
+							{new Date(contextEntry.created_at).toLocaleDateString()}
 						</div>
 						<div className="text-sm text-muted-foreground line-clamp-3">
-							{record.content}
+							{contextEntry.content}
 						</div>
-						{record.projects && record.projects.length > 0 && (
+						{contextEntry.projects && contextEntry.projects.length > 0 && (
 							<div className="flex flex-wrap gap-1">
-								{record.projects.map(
+								{contextEntry.projects.map(
 									(project: { id: string; title: string }) => (
 										<span
 											key={project.id}
@@ -48,17 +49,17 @@ export function RecordList({ records }: RecordListProps) {
 								)}
 							</div>
 						)}
-						{(!record.projects || record.projects.length === 0) && (
+						{(!contextEntry.projects || contextEntry.projects.length === 0) && (
 							<span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-primary/10 text-primary">
 								All Projects
 							</span>
 						)}
 
 						{/* Attachment indicator */}
-						{(record.file || record.website) && (
+						{(contextEntry.file || contextEntry.website) && (
 							<div className="flex items-center gap-1 text-xs text-muted-foreground">
 								<span className="inline-flex items-center px-2 py-1 rounded-full bg-accent text-accent-foreground">
-									{record.file ? "📎 File" : "🌐 Website"}
+									{contextEntry.file ? "📎 File" : "🌐 Website"}
 								</span>
 							</div>
 						)}

@@ -30,7 +30,7 @@ export function DeleteAccountForm({
 				<ul className="list-disc list-inside text-muted-foreground space-y-2 mb-6">
 					<li>Your profile information</li>
 					<li>All your projects and their associated data</li>
-					<li>All your records and their associated data</li>
+					<li>All your context entries and their associated data</li>
 					<li>All conversations and AI-generated content</li>
 					<li>All file attachments and sources</li>
 					<li>Your account settings and preferences</li>
