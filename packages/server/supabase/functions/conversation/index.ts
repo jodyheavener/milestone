@@ -35,6 +35,7 @@ async function getProjectContext(
 	projectId: string,
 ): Promise<
 	Array<{
+		title: string | null;
 		content: string;
 		file?: { extracted_text: string | null };
 		website?: { extracted_content: string | null };
@@ -67,6 +68,7 @@ async function getProjectContext(
 		.select(
 			`
 			id,
+			title,
 			content,
 			file (
 				extracted_text
@@ -84,6 +86,7 @@ async function getProjectContext(
 	}
 
 	return (contextEntries || []).map((contextEntry) => ({
+		title: contextEntry.title,
 		content: contextEntry.content,
 		file: Array.isArray(contextEntry.file)
 			? contextEntry.file[0]
@@ -99,6 +102,7 @@ async function getProjectContext(
  */
 function buildContextString(
 	contextEntries: Array<{
+		title: string | null;
 		content: string;
 		file?: { extracted_text: string | null };
 		website?: { extracted_content: string | null };
@@ -109,7 +113,9 @@ function buildContextString(
 	context += "Available Context from Context Entries:\n\n";
 
 	contextEntries.forEach((contextEntry, index) => {
-		context += `Context Entry ${index + 1}:\n`;
+		context += `Context Entry ${index + 1}${
+			contextEntry.title ? `: ${contextEntry.title}` : ""
+		}:\n`;
 		context += `Content: ${contextEntry.content}\n`;
 
 		if (contextEntry.file?.extracted_text) {

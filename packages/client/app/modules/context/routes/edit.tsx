@@ -23,6 +23,7 @@ export async function loader({ context, params }: Route.LoaderArgs) {
 export async function action({ request, params, context }: Route.ActionArgs) {
 	const { supabase } = context.get(AuthContext);
 	const formData = await request.formData();
+	const title = formData.get("title") as string;
 	const content = formData.get("content");
 	const projectIds = formData.getAll("projectIds") as string[];
 
@@ -34,6 +35,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 
 	try {
 		await updateContextEntry(supabase, params.id, {
+			title: title?.trim() || undefined,
 			content: content.toString().trim(),
 			projectIds: projectIds.filter(Boolean),
 		});

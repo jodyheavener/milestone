@@ -8,6 +8,7 @@
 create table public.context_entry (
   id              uuid        primary key default gen_random_uuid(),
   user_id         uuid        not null references auth.users(id) on delete cascade,
+  title           text,
   content         text        not null,
   content_tsv     tsvector,
   metadata        jsonb,

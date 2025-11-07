@@ -57,6 +57,10 @@ export function ContextEntryView({ contextEntry }: ContextEntryViewProps) {
 						{new Date(contextEntry.created_at).toLocaleDateString()}
 					</div>
 
+					{contextEntry.title && (
+						<h2 className="text-2xl font-bold">{contextEntry.title}</h2>
+					)}
+
 					<div className="whitespace-pre-wrap text-sm">
 						{contextEntry.content}
 					</div>

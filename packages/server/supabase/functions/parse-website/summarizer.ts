@@ -1,12 +1,13 @@
 import { getOpenaiClient, logger } from "@/lib";
 
 /**
- * Generates a concise summary of extracted web page content using OpenAI
+ * Generates a title and summary of extracted web page content using OpenAI
  */
-export async function generateWebsiteSummary(
+export async function generateWebsiteTitleAndSummary(
 	content: string,
 	pageTitle?: string,
-): Promise<string> {
+	url?: string,
+): Promise<{ title: string; summary: string }> {
 	const maxInputLength = 80000; // Cap at ~80k chars
 	const truncatedContent = content.length > maxInputLength
 		? content.substring(0, maxInputLength) + "..."
@@ -14,18 +15,13 @@ export async function generateWebsiteSummary(
 
 	try {
 		const systemPrompt =
-			`You are a helpful assistant that analyzes and summarizes web page content. Your task is to create a concise, informative summary that captures the key information, main topics, and important details from the webpage content. Focus on:
-
-1. Main topics and themes
-2. Key information and facts
-3. Important details or insights
-4. Any notable conclusions or recommendations
-
-Write the summary in a clear, professional tone that would be useful for someone who wants to understand the webpage's content without reading it in full.`;
+			`You are a helpful assistant that analyzes and summarizes web page content. Your task is to create a concise, descriptive title and a comprehensive summary that captures the key information, main topics, and important details from the webpage content.`;
 
 		const userPrompt = pageTitle
-			? `Please analyze and summarize the following web page content from "${pageTitle}":\n\n${truncatedContent}`
-			: `Please analyze and summarize the following web page content:\n\n${truncatedContent}`;
+			? `Please analyze the following web page content from "${pageTitle}":\n\n${truncatedContent}\n\nGenerate a descriptive title (maximum 100 characters, prefer using or improving the page title if it's good) and a comprehensive summary (maximum 1000 characters) for this content.`
+			: `Please analyze the following web page content${
+				url ? ` from ${url}` : ""
+			}:\n\n${truncatedContent}\n\nGenerate a descriptive title (maximum 100 characters) and a comprehensive summary (maximum 1000 characters) for this content.`;
 
 		const client = getOpenaiClient();
 		const response = await client.responses.create({
@@ -42,10 +38,16 @@ Write the summary in a clear, professional tone that would be useful for someone
 			model: "gpt-4o-mini",
 			text: {
 				format: {
-					name: "website_summary",
+					name: "website_title_and_summary",
 					schema: {
 						type: "object",
 						properties: {
+							title: {
+								type: "string",
+								description:
+									"A concise, descriptive title for the web page (maximum 100 characters). Prefer using or improving the page title if provided.",
+								maxLength: 100,
+							},
 							summary: {
 								type: "string",
 								description:
@@ -53,7 +55,7 @@ Write the summary in a clear, professional tone that would be useful for someone
 								maxLength: 1000,
 							},
 						},
-						required: ["summary"],
+						required: ["title", "summary"],
 						additionalProperties: false,
 					},
 					type: "json_schema",
@@ -62,13 +64,29 @@ Write the summary in a clear, professional tone that would be useful for someone
 		});
 
 		const result = JSON.parse(response.output_text || "{}");
-		return result.summary || truncatedContent.substring(0, 500);
+		return {
+			title: result.title || pageTitle || "Untitled Page",
+			summary: result.summary || truncatedContent.substring(0, 500),
+		};
 	} catch (error) {
-		logger.error("OpenAI API error for website summary", { error });
-		// Fallback to naive summary
-		return (
-			truncatedContent.substring(0, 500) +
-			(truncatedContent.length > 500 ? "..." : "")
-		);
+		logger.error("OpenAI API error for website title and summary", { error });
+		// Fallback to page title or naive title and summary
+		return {
+			title: pageTitle || "Untitled Page",
+			summary: truncatedContent.substring(0, 500) +
+				(truncatedContent.length > 500 ? "..." : ""),
+		};
 	}
+}
+
+/**
+ * Generates a concise summary of extracted web page content using OpenAI
+ * @deprecated Use generateWebsiteTitleAndSummary instead
+ */
+export async function generateWebsiteSummary(
+	content: string,
+	pageTitle?: string,
+): Promise<string> {
+	const result = await generateWebsiteTitleAndSummary(content, pageTitle);
+	return result.summary;
 }

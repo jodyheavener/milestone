@@ -4,7 +4,7 @@ import { Hono, z } from "@/lib";
 import { getUserClient } from "@/lib";
 import { getAuthHeader, getUserOrThrow } from "@/lib";
 import { handleRequest, json, logger, withCORS } from "@/lib";
-import { generateWebsiteSummary } from "./summarizer.ts";
+import { generateWebsiteTitleAndSummary } from "./summarizer.ts";
 import { validateUrl } from "./validation.ts";
 import { extractPage } from "./website-parser.ts";
 
@@ -79,22 +79,27 @@ app.post(
 			});
 		}
 
-		// Generate summary using OpenAI
+		// Generate title and summary using OpenAI
+		let title: string;
 		let summary: string;
 		try {
-			summary = await generateWebsiteSummary(
+			const titleAndSummary = await generateWebsiteTitleAndSummary(
 				pageData.content,
 				pageData.title,
+				input.url,
 			);
+			title = titleAndSummary.title;
+			summary = titleAndSummary.summary;
 		} catch (error) {
-			logger.error("Failed to generate website summary", {
+			logger.error("Failed to generate website title and summary", {
 				userId: user.id,
 				url: input.url,
 				error: error instanceof Error
 					? { message: error.message, stack: error.stack }
 					: String(error),
 			});
-			// Continue without summary rather than failing
+			// Continue with fallback title and summary rather than failing
+			title = pageData.title || "Untitled Page";
 			summary = "";
 		}
 
@@ -107,6 +112,7 @@ app.post(
 
 		const response = {
 			pageTitle: pageData.title || "Untitled",
+			suggestedTitle: title,
 			extractedContent: pageData.content,
 			summary,
 			requestId,

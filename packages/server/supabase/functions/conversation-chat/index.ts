@@ -153,6 +153,7 @@ async function processUnindexedContextEntries(
 			.select(
 				`
 				id,
+				title,
 				content,
 				file (
 					id,
@@ -374,6 +375,7 @@ async function getFallbackContextEntryContext(
 				context_entry_id,
 				context_entry:context_entry_id (
 					id,
+					title,
 					content,
 					file (
 						id,
@@ -402,10 +404,13 @@ async function getFallbackContextEntryContext(
 				: cep.context_entry;
 			if (!contextEntry) continue;
 
-			// Add context entry content
+			// Add context entry content with title prefix if available
 			if (contextEntry.content) {
+				const titlePrefix = contextEntry.title
+					? `[${contextEntry.title}] `
+					: "";
 				contextItems.push({
-					text: contextEntry.content.substring(0, 1000), // Limit length
+					text: `${titlePrefix}${contextEntry.content.substring(0, 1000)}`, // Limit length
 					source_type: "context_entry",
 				});
 			}

@@ -110,6 +110,7 @@ async function getRecentContextEntriesContext(
 				context_entry_id,
 				context_entry:context_entry_id (
 					id,
+					title,
 					content,
 					file (
 						id,
@@ -136,10 +137,13 @@ async function getRecentContextEntriesContext(
 			const contextEntry = contextEntryProject.context_entry;
 			if (!contextEntry) continue;
 
-			// Add context entry content
+			// Add context entry content with title prefix if available
 			if (contextEntry.content) {
+				const titlePrefix = contextEntry.title
+					? `[${contextEntry.title}] `
+					: "";
 				contextItems.push({
-					text: contextEntry.content.substring(0, 1000), // Limit length
+					text: `${titlePrefix}${contextEntry.content.substring(0, 1000)}`, // Limit length
 					source_type: "context_entry",
 					source_id: contextEntry.id,
 				});

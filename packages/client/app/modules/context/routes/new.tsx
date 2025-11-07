@@ -20,6 +20,7 @@ export async function action({ request, context }: Route.ActionArgs) {
 	}
 
 	const formData = await request.formData();
+	const title = formData.get("title") as string;
 	const content = formData.get("content");
 	const projectIds = formData.getAll("projectIds") as string[];
 	const attachmentType = formData.get("attachmentType") as string;
@@ -50,6 +51,7 @@ export async function action({ request, context }: Route.ActionArgs) {
 						attachmentType === "website"
 							? {
 									pageTitle: websitePageTitle,
+									suggestedTitle: title || websitePageTitle,
 									extractedContent: websiteExtractedContent,
 								}
 							: undefined,
@@ -66,6 +68,7 @@ export async function action({ request, context }: Route.ActionArgs) {
 			: undefined;
 
 		await createContextEntry(supabase, user, {
+			title: title?.trim() || undefined,
 			content: content.toString().trim(),
 			projectIds: projectIds.filter(Boolean),
 			attachment: attachmentData,

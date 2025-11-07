@@ -42,6 +42,24 @@ export function EditContextEntryForm({
 
 					<div className="space-y-2">
 						<label
+							htmlFor="title"
+							className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+						>
+							Title <span className="text-muted-foreground">(optional)</span>
+						</label>
+						<input
+							id="title"
+							name="title"
+							type="text"
+							defaultValue={contextEntry.title || ""}
+							maxLength={100}
+							className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+							placeholder="Enter a title for this context entry..."
+						/>
+					</div>
+
+					<div className="space-y-2">
+						<label
 							htmlFor="content"
 							className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
 						>

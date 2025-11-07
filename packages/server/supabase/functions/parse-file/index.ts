@@ -5,7 +5,7 @@ import { getUserClient } from "@/lib";
 import { getAuthHeader, getUserOrThrow } from "@/lib";
 import { handleRequest, json, logger, withCORS } from "@/lib";
 import { downloadFile, extractTextFromFile } from "./extraction.ts";
-import { generateSummary } from "./summarizer.ts";
+import { generateTitleAndSummary } from "./summarizer.ts";
 
 const app = new Hono();
 
@@ -83,19 +83,32 @@ app.post(
 			});
 		}
 
-		// Generate summary using OpenAI
+		// Extract filename from storage path for title generation
+		const fileName = input.storagePath.split("/").pop() || undefined;
+
+		// Generate title and summary using OpenAI
+		let title: string;
 		let summary: string;
 		try {
-			summary = await generateSummary(extractionResult.text, mimeType);
+			const titleAndSummary = await generateTitleAndSummary(
+				extractionResult.text,
+				mimeType,
+				fileName,
+			);
+			title = titleAndSummary.title;
+			summary = titleAndSummary.summary;
 		} catch (error) {
-			logger.error("Failed to generate summary", {
+			logger.error("Failed to generate title and summary", {
 				userId: user.id,
 				storagePath: input.storagePath,
 				error: error instanceof Error
 					? { message: error.message, stack: error.stack }
 					: String(error),
 			});
-			// Continue without summary rather than failing
+			// Continue with fallback title and summary rather than failing
+			title = fileName
+				? fileName.replace(/\.[^/.]+$/, "")
+				: "Untitled Document";
 			summary = "";
 		}
 
@@ -108,6 +121,7 @@ app.post(
 
 		const response = {
 			extractedText: extractionResult.text,
+			title,
 			summary,
 			parser: extractionResult.parser,
 			...(extractionResult.date && { date: extractionResult.date }),

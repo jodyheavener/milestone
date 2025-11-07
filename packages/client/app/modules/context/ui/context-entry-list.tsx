@@ -32,6 +32,9 @@ export function ContextEntryList({ contextEntries }: ContextEntryListProps) {
 						<div className="text-sm text-muted-foreground">
 							{new Date(contextEntry.created_at).toLocaleDateString()}
 						</div>
+						{contextEntry.title && (
+							<div className="text-base font-medium">{contextEntry.title}</div>
+						)}
 						<div className="text-sm text-muted-foreground line-clamp-3">
 							{contextEntry.content}
 						</div>

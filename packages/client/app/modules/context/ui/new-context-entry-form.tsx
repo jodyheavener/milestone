@@ -31,6 +31,7 @@ export function NewContextEntryForm({
 	const [creationMethod, setCreationMethod] = useState<
 		"file" | "website" | "manual" | null
 	>(null);
+	const [title, setTitle] = useState("");
 	const [content, setContent] = useState("");
 	const [websiteUrl, setWebsiteUrl] = useState("");
 	const [scannedWebsite, setScannedWebsite] =
@@ -54,6 +55,7 @@ export function NewContextEntryForm({
 				storagePath: result.storagePath,
 				parsedData: result.parsedData,
 			});
+			setTitle(result.parsedData.title);
 			setContent(result.parsedData.summary);
 		} catch (error) {
 			console.error("File upload/parsing error:", error);
@@ -71,6 +73,7 @@ export function NewContextEntryForm({
 				console.error("Failed to remove file:", error);
 			}
 			setUploadedFile(null);
+			setTitle("");
 			setContent("");
 		}
 	};
@@ -85,6 +88,7 @@ export function NewContextEntryForm({
 		try {
 			const scanned = await scanWebsite(supabase, websiteUrl);
 			setScannedWebsite(scanned);
+			setTitle(scanned.suggestedTitle);
 			setContent(scanned.summary);
 		} catch (error) {
 			console.error("Website scanning error:", error);
@@ -96,6 +100,7 @@ export function NewContextEntryForm({
 
 	const removeScannedWebsite = () => {
 		setScannedWebsite(null);
+		setTitle("");
 		setContent("");
 	};
 
@@ -309,6 +314,30 @@ export function NewContextEntryForm({
 						</div>
 					)}
 
+					{/* Title Input - Show for all methods */}
+					{(creationMethod === "file" && uploadedFile) ||
+					(creationMethod === "website" && scannedWebsite) ||
+					creationMethod === "manual" ? (
+						<div className="space-y-2">
+							<label
+								htmlFor="title"
+								className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+							>
+								Title <span className="text-muted-foreground">(optional)</span>
+							</label>
+							<input
+								id="title"
+								name="title"
+								type="text"
+								value={title}
+								onChange={(e) => setTitle(e.target.value)}
+								className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+								placeholder="Enter a title for this context entry..."
+								maxLength={100}
+							/>
+						</div>
+					) : null}
+
 					{/* Content Text Area - Show for all methods */}
 					{(creationMethod === "file" && uploadedFile) ||
 					(creationMethod === "website" && scannedWebsite) ||
@@ -424,7 +453,7 @@ export function NewContextEntryForm({
 								{isSubmitting ? "Creating..." : "Create Context Entry"}
 							</button>
 							<Link
-								to="/context entrys"
+								to="/context"
 								className={cn(
 									"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
 									"h-10 px-4 py-2 bg-secondary text-secondary-foreground hover:bg-secondary/80"

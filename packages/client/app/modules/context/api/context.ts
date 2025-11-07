@@ -18,6 +18,7 @@ export async function createContextEntry(
 	const { data: contextEntry, error } = await supabase
 		.from("context_entry")
 		.insert({
+			title: data.title || null,
 			content: data.content,
 			user_id: user.id,
 		})
@@ -283,11 +284,19 @@ export async function updateContextEntry(
 	id: string,
 	data: UpdateContextEntryData
 ): Promise<ContextEntryWithProjects> {
-	// Update the context entry content if provided
+	// Update the context entry title and/or content if provided
+	const updateData: { title?: string | null; content?: string } = {};
+	if (data.title !== undefined) {
+		updateData.title = data.title || null;
+	}
 	if (data.content !== undefined) {
+		updateData.content = data.content;
+	}
+
+	if (Object.keys(updateData).length > 0) {
 		const { error } = await supabase
 			.from("context_entry")
-			.update({ content: data.content })
+			.update(updateData)
 			.eq("id", id)
 			.select()
 			.single();

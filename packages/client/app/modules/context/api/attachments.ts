@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@/lib/supabase";
 
 export interface ParsedFileData {
 	extractedText: string;
+	title: string;
 	summary: string;
 	parser: string;
 	storagePath?: string;
@@ -10,6 +11,7 @@ export interface ParsedFileData {
 export interface ScannedWebsiteData {
 	url: string;
 	pageTitle: string;
+	suggestedTitle: string;
 	extractedContent: string;
 	summary: string;
 }
@@ -120,6 +122,7 @@ export async function scanWebsite(
 	return {
 		url: url.trim(),
 		pageTitle: scanData.pageTitle,
+		suggestedTitle: scanData.suggestedTitle || scanData.pageTitle,
 		extractedContent: scanData.extractedContent,
 		summary: scanData.summary,
 	};
