@@ -8,10 +8,6 @@
 create table public.profile (
   id                    uuid        primary key references auth.users(id) on delete cascade,
   name                  text        not null,
-  job_title             text,
-  employer_name         text,
-  employer_description  text,
-  employer_website      text,
   flags                 text[]      not null default '{}',
   created_at            timestamptz not null default now(),
   updated_at            timestamptz not null default now()

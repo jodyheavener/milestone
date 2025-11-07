@@ -31,22 +31,6 @@ export async function updateProfile(
 		updateData.name = data.name;
 	}
 
-	if (data.jobTitle !== undefined) {
-		updateData.job_title = data.jobTitle;
-	}
-
-	if (data.employerName !== undefined) {
-		updateData.employer_name = data.employerName;
-	}
-
-	if (data.employerDescription !== undefined) {
-		updateData.employer_description = data.employerDescription;
-	}
-
-	if (data.employerWebsite !== undefined) {
-		updateData.employer_website = data.employerWebsite;
-	}
-
 	const { data: profile, error } = await supabase
 		.from("profile")
 		.update(updateData)

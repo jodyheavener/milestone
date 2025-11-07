@@ -6,10 +6,6 @@ import type {
 
 export interface ProfileFormData {
 	name: string;
-	job_title: string;
-	employer_name: string;
-	employer_description: string;
-	employer_website: string;
 }
 
 export function validateEmailForm(data: EmailUpdateData): string[] {
@@ -61,23 +57,10 @@ export function validateProfileForm(data: ProfileFormData): string[] {
 		errors.push("Name is required");
 	}
 
-	if (data.employer_website && !isValidUrl(data.employer_website)) {
-		errors.push("Employer website must be a valid URL");
-	}
-
 	return errors;
 }
 
 function isValidEmail(email: string): boolean {
 	const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 	return emailRegex.test(email);
-}
-
-function isValidUrl(url: string): boolean {
-	try {
-		new URL(url);
-		return true;
-	} catch {
-		return false;
-	}
 }

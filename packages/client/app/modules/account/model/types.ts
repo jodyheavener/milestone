@@ -5,10 +5,6 @@ export type ProfileUpdate = TablesUpdate<"profile">;
 
 export interface UpdateProfileData {
 	name?: string;
-	jobTitle?: string | null;
-	employerName?: string | null;
-	employerDescription?: string | null;
-	employerWebsite?: string | null;
 }
 
 export interface EmailUpdateData {

@@ -13,10 +13,6 @@ export default function ProfileRoute() {
 
 	const [formData, setFormData] = useState<ProfileFormData>({
 		name: user?.name || "",
-		job_title: user?.job_title || "",
-		employer_name: user?.employer_name || "",
-		employer_description: user?.employer_description || "",
-		employer_website: user?.employer_website || "",
 	});
 
 	const handleSubmit = async (e: React.FormEvent) => {
@@ -37,10 +33,6 @@ export default function ProfileRoute() {
 		try {
 			const updateData: UpdateProfileData = {
 				name: formData.name,
-				jobTitle: formData.job_title || null,
-				employerName: formData.employer_name || null,
-				employerDescription: formData.employer_description || null,
-				employerWebsite: formData.employer_website || null,
 			};
 			await updateProfileWithBrowser(user.id, updateData);
 			setSuccess("Profile updated successfully!");
@@ -56,7 +48,7 @@ export default function ProfileRoute() {
 			<div className="mb-8">
 				<h1 className="text-3xl font-bold text-foreground">Profile</h1>
 				<p className="text-muted-foreground mt-2">
-					Manage your personal information and job details.
+					Manage your personal information.
 				</p>
 			</div>
 
