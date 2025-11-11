@@ -107,7 +107,7 @@ export function ContextEntryView({ contextEntry }: ContextEntryViewProps) {
 												</div>
 												<div className="text-xs text-muted-foreground">
 													{contextEntry.file.mime_type} •{" "}
-													{formatFileSize(contextEntry.file.file_size)}
+													{formatFileSize(contextEntry.file.byte_size)}
 												</div>
 											</div>
 										</div>

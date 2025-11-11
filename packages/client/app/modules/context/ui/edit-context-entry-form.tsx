@@ -63,13 +63,12 @@ export function EditContextEntryForm({
 							htmlFor="content"
 							className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
 						>
-							Content
+							Content <span className="text-muted-foreground">(optional)</span>
 						</label>
 						<textarea
 							id="content"
 							name="content"
-							defaultValue={contextEntry.content}
-							required
+							defaultValue={contextEntry.content || ""}
 							rows={8}
 							className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[120px] resize-none"
 						/>
@@ -102,7 +101,7 @@ export function EditContextEntryForm({
 												</div>
 												<div className="text-xs text-muted-foreground">
 													{contextEntry.file.mime_type} •{" "}
-													{formatFileSize(contextEntry.file.file_size)}
+													{formatFileSize(contextEntry.file.byte_size)}
 												</div>
 											</div>
 										</div>

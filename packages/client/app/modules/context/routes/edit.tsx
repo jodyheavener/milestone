@@ -27,16 +27,10 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 	const content = formData.get("content");
 	const projectIds = formData.getAll("projectIds") as string[];
 
-	if (!content) {
-		return {
-			error: "Content is required",
-		};
-	}
-
 	try {
 		await updateContextEntry(supabase, params.id, {
 			title: title?.trim() || undefined,
-			content: content.toString().trim(),
+			content: content ? content.toString().trim() || null : null,
 			projectIds: projectIds.filter(Boolean),
 		});
 

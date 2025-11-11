@@ -156,12 +156,11 @@ async function processUnindexedContextEntries(
 				title,
 				content,
 				file (
-					id,
-					extracted_text
+					id
 				),
 				website (
 					id,
-					extracted_content
+					main_text
 				)
 			`,
 			)
@@ -209,69 +208,95 @@ async function processUnindexedContextEntries(
 				? [contextEntry.file]
 				: [];
 			for (const file of files) {
-				if (file.extracted_text && file.extracted_text.trim().length > 0) {
-					try {
-						// Check if file is already indexed
-						const { data: existingChunks } = await supabase
-							.from("content_chunk")
-							.select("id")
-							.eq("source_type", "file")
-							.eq("source_id", file.id)
-							.eq("project_id", projectId)
-							.limit(1);
+				try {
+					// Check if file is already indexed
+					const { data: existingChunks } = await supabase
+						.from("content_chunk")
+						.select("id")
+						.eq("source_type", "file")
+						.eq("source_id", file.id)
+						.eq("project_id", projectId)
+						.limit(1);
 
-						if (!existingChunks || existingChunks.length === 0) {
-							// For files and websites, we need to create chunks manually
-							// since processContent tries to create context entry embeddings
-							const config = await aiSearch.getSearchConfig(projectId);
-							if (config) {
-								const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
-								if (!openaiApiKey) {
-									throw new Error(
-										"OPENAI_API_KEY environment variable is not set",
+					if (!existingChunks || existingChunks.length === 0) {
+						// Get file chunks from file_chunk table
+						const { data: fileChunks } = await supabase
+							.from("file_chunk")
+							.select("content_text")
+							.eq("file_id", file.id)
+							.order("chunk_index", { ascending: true });
+
+						let fullText = "";
+						if (fileChunks && fileChunks.length > 0) {
+							// Combine all chunks into full text
+							fullText = fileChunks
+								.map((chunk: { content_text: string }) => chunk.content_text)
+								.join("\n\n");
+						} else {
+							// If no file_chunk records exist (e.g., large file skipped chunking),
+							// try to get text from summary or record
+							// For now, skip indexing files without chunks - they'll need to be re-parsed
+							logger.info("File has no chunks, skipping indexing", {
+								fileId: file.id,
+								contextEntryId: contextEntry.id,
+								projectId,
+							});
+							continue;
+						}
+
+						if (fullText.trim().length > 0) {
+								// For files and websites, we need to create chunks manually
+								// since processContent tries to create context entry embeddings
+								const config = await aiSearch.getSearchConfig(projectId);
+								if (config) {
+									const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
+									if (!openaiApiKey) {
+										throw new Error(
+											"OPENAI_API_KEY environment variable is not set",
+										);
+									}
+									const embeddingProvider = new ServerEmbeddingProvider(
+										openaiApiKey,
 									);
+									const chunks = await createContentChunks(
+										"file",
+										file.id,
+										projectId,
+										fullText,
+										{
+											chunkSize: config.chunk_size,
+											chunkOverlap: config.chunk_overlap,
+										},
+										embeddingProvider,
+										config.embedding_model,
+									);
+
+									const { error: chunksError } = await supabase
+										.from("content_chunk")
+										.insert(chunks);
+
+									if (chunksError) {
+										throw chunksError;
+									}
+
+									logger.info("Successfully indexed file", {
+										fileId: file.id,
+										contextEntryId: contextEntry.id,
+										projectId,
+									});
 								}
-								const embeddingProvider = new ServerEmbeddingProvider(
-									openaiApiKey,
-								);
-								const chunks = await createContentChunks(
-									"file",
-									file.id,
-									projectId,
-									file.extracted_text,
-									{
-										chunkSize: config.chunk_size,
-										chunkOverlap: config.chunk_overlap,
-									},
-									embeddingProvider,
-									config.embedding_model,
-								);
-
-								const { error: chunksError } = await supabase
-									.from("content_chunk")
-									.insert(chunks);
-
-								if (chunksError) {
-									throw chunksError;
-								}
-
-								logger.info("Successfully indexed file", {
-									fileId: file.id,
-									contextEntryId: contextEntry.id,
-									projectId,
-								});
 							}
 						}
-					} catch (processError) {
-						logger.error("Failed to process file for search", {
-							fileId: file.id,
-							contextEntryId: contextEntry.id,
-							projectId,
-							error: processError instanceof Error
-								? processError.message
-								: String(processError),
-						});
 					}
+				} catch (processError) {
+					logger.error("Failed to process file for search", {
+						fileId: file.id,
+						contextEntryId: contextEntry.id,
+						projectId,
+						error: processError instanceof Error
+							? processError.message
+							: String(processError),
+					});
 				}
 			}
 
@@ -282,17 +307,17 @@ async function processUnindexedContextEntries(
 				? [contextEntry.website]
 				: [];
 			for (const website of websites) {
-				if (
-					website.extracted_content &&
-					website.extracted_content.trim().length > 0
-				) {
+				// Type assertion needed because Supabase select with relations returns complex types
+				type WebsiteWithMainText = { id: string; main_text: string | null };
+				const websiteData = website as unknown as WebsiteWithMainText;
+				if (websiteData.main_text && websiteData.main_text.trim().length > 0) {
 					try {
 						// Check if website is already indexed
 						const { data: existingChunks } = await supabase
 							.from("content_chunk")
 							.select("id")
 							.eq("source_type", "website")
-							.eq("source_id", website.id)
+							.eq("source_id", websiteData.id)
 							.eq("project_id", projectId)
 							.limit(1);
 
@@ -312,9 +337,9 @@ async function processUnindexedContextEntries(
 								);
 								const chunks = await createContentChunks(
 									"website",
-									website.id,
+									websiteData.id,
 									projectId,
-									website.extracted_content,
+									websiteData.main_text,
 									{
 										chunkSize: config.chunk_size,
 										chunkOverlap: config.chunk_overlap,
@@ -332,7 +357,7 @@ async function processUnindexedContextEntries(
 								}
 
 								logger.info("Successfully indexed website", {
-									websiteId: website.id,
+									websiteId: websiteData.id,
 									contextEntryId: contextEntry.id,
 									projectId,
 								});
@@ -340,7 +365,7 @@ async function processUnindexedContextEntries(
 						}
 					} catch (processError) {
 						logger.error("Failed to process website for search", {
-							websiteId: website.id,
+							websiteId: websiteData.id,
 							contextEntryId: contextEntry.id,
 							projectId,
 							error: processError instanceof Error

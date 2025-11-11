@@ -248,8 +248,15 @@ export class AISearchService {
 		textWeight: number = 0.3,
 		vectorWeight: number = 0.7,
 	): Promise<SearchResult[]> {
+		// Generate query embedding
+		const queryEmbedding = await this.embeddingProvider.generateEmbedding(
+			query,
+			this.embeddingModel,
+		);
+
 		const { data, error } = await this.supabase.rpc("search_content_hybrid", {
 			query_text: query,
+			query_embedding: embeddingToVector(queryEmbedding),
 			project_id: projectId,
 			source_types: sourceTypes,
 			match_threshold: matchThreshold,

@@ -19,7 +19,7 @@ export async function createContextEntry(
 		.from("context_entry")
 		.insert({
 			title: data.title || null,
-			content: data.content,
+			content: data.content || null,
 			user_id: user.id,
 		})
 		.select()
@@ -49,64 +49,170 @@ export async function createContextEntry(
 	if (data.attachment) {
 		if (
 			data.attachment.type === "file" &&
-			(data.attachment.file || data.attachment.fileMetadata)
+			data.attachment.parsedData?.storagePath
 		) {
-			// Get the storage path from parsed data (file was already uploaded)
-			const fileName =
-				data.attachment.fileMetadata?.name ||
-				data.attachment.file?.name ||
-				"unknown";
-			const storagePath =
-				data.attachment.parsedData?.storagePath ||
-				`${contextEntry.id}/${fileName}`;
+			// Link existing file record to context entry
+			const storagePath = data.attachment.parsedData?.storagePath;
+			if (!storagePath) {
+				throw new Error("Storage path is required for file attachments");
+			}
+			// First check if file exists and get its current state
+			// Retry a few times in case of timing issues (file might be updating)
+			let existingFile = null;
+			for (let attempt = 0; attempt < 3; attempt++) {
+				const { data, error } = await supabase
+					.from("file")
+					.select("id, context_entry_id")
+					.eq("storage_path", storagePath)
+					.maybeSingle();
 
-			// Create file attachment context entry with parsed data
-			const { error: fileError } = await supabase.from("file").insert({
-				context_entry_id: contextEntry.id,
-				mime_type:
-					data.attachment.fileMetadata?.type ||
-					data.attachment.file?.type ||
-					"unknown",
-				file_size:
-					data.attachment.fileMetadata?.size || data.attachment.file?.size || 0,
-				storage_path: storagePath,
-				parser: data.attachment.parsedData?.parser || null,
-				extracted_text: data.attachment.parsedData?.extractedText || null,
-			});
+				if (error) {
+					console.error("Error looking up file:", error);
+					break;
+				}
 
-			if (fileError) {
-				throw fileError;
+				if (data) {
+					existingFile = data;
+					break;
+				}
+
+				// Wait a bit before retrying (only if not found)
+				if (attempt < 2) {
+					await new Promise((resolve) => setTimeout(resolve, 200));
+				}
 			}
 
-			// If file wasn't uploaded yet, upload it now
-			if (!data.attachment.parsedData?.storagePath && data.attachment.file) {
-				const { error: uploadError } = await supabase.storage
-					.from("attachments")
-					.upload(storagePath, data.attachment.file);
+			if (!existingFile) {
+				console.warn(
+					"File not found for storage path after retries:",
+					storagePath
+				);
+				// Continue without linking - file might not exist yet or storage_path mismatch
+			} else {
+				// Update file.context_entry_id to point to this context entry
+				// Note: This means the file will visually appear in the latest context entry
+				// but records ensure the file is accessible from all context entries
+				const { error: fileError } = await supabase
+					.from("file")
+					.update({ context_entry_id: contextEntry.id })
+					.eq("id", existingFile.id);
 
-				if (uploadError) {
-					// If upload fails, clean up the database context entry
+				if (fileError) {
+					console.error("Error updating file context_entry_id:", fileError);
+					// Continue - we'll still create the record
+				}
+
+				// Always create a new record for this context entry
+				// This allows the same file to be linked to multiple context entries
+				// Each context entry gets its own record
+				const { data: existingRecord } = await supabase
+					.from("record")
+					.select("id")
+					.eq("file_id", existingFile.id)
+					.eq("context_entry_id", contextEntry.id)
+					.maybeSingle();
+
+				if (!existingRecord) {
+					// Get any existing record's content to reuse it (from any context entry or unlinked)
+					const { data: originalRecord } = await supabase
+						.from("record")
+						.select("content, model_name, prompt_hash")
+						.eq("file_id", existingFile.id)
+						.order("created_at", { ascending: false })
+						.limit(1)
+						.maybeSingle();
+
+					// Create new record linking this file to this context entry
+					const { error: recordInsertError } = await supabase
+						.from("record")
+						.insert({
+							user_id: user.id,
+							file_id: existingFile.id,
+							context_entry_id: contextEntry.id,
+							content: originalRecord?.content || {
+								tldr: "",
+								key_takeaways: [],
+							},
+							projects: data.projectIds || [],
+							model_name: originalRecord?.model_name || "gpt-4o-mini",
+							prompt_hash: originalRecord?.prompt_hash || "\\x00",
+							tokens_in: 0,
+							tokens_out: 0,
+						});
+
+					if (recordInsertError) {
+						console.error("Error creating record:", recordInsertError);
+						// Don't throw - continue even if record creation fails
+					} else {
+						console.log("Successfully linked file to context entry", {
+							fileId: existingFile.id,
+							contextEntryId: contextEntry.id,
+						});
+					}
+				} else {
+					// Update existing record with new project associations
 					await supabase
-						.from("file")
-						.delete()
-						.eq("context_entry_id", contextEntry.id);
-					throw uploadError;
+						.from("record")
+						.update({
+							projects: data.projectIds || [],
+						})
+						.eq("id", existingRecord.id);
 				}
 			}
 		} else if (
 			data.attachment.type === "website" &&
 			data.attachment.websiteUrl
 		) {
-			// Create website attachment context entry with scanned data
-			const { error: websiteError } = await supabase.from("website").insert({
-				context_entry_id: contextEntry.id,
-				address: data.attachment.websiteUrl,
-				page_title: data.attachment.websiteData?.pageTitle || "Untitled",
-				extracted_content: data.attachment.websiteData?.extractedContent || "",
-			});
+			// Link existing website record to context entry
+			const { data: website, error: websiteError } = await supabase
+				.from("website")
+				.update({ context_entry_id: contextEntry.id })
+				.eq("address", data.attachment.websiteUrl)
+				.select("id")
+				.maybeSingle();
 
 			if (websiteError) {
 				throw websiteError;
+			}
+
+			// Update record to link to context entry and projects
+			if (website?.id) {
+				await supabase
+					.from("record")
+					.update({
+						context_entry_id: contextEntry.id,
+						projects: data.projectIds || [],
+					})
+					.eq("website_id", website.id)
+					.is("context_entry_id", null); // Only update if not already linked
+			} else {
+				console.warn("Website not found for URL:", data.attachment.websiteUrl);
+			}
+		}
+	}
+
+	// For manual entries, generate summary server-side
+	if (!data.attachment && data.content) {
+		// Call edge function to generate summary for manual entry
+		const {
+			data: { session },
+		} = await supabase.auth.getSession();
+		if (session) {
+			try {
+				await supabase.functions.invoke("generate-context-summary", {
+					body: {
+						contextEntryId: contextEntry.id,
+						title: data.title || "",
+						content: data.content,
+						projectIds: data.projectIds || [],
+					},
+					headers: {
+						Authorization: `Bearer ${session.access_token}`,
+					},
+				});
+			} catch (error) {
+				// Don't fail if summary generation fails
+				console.error("Failed to generate summary for manual entry:", error);
 			}
 		}
 	}
@@ -285,12 +391,12 @@ export async function updateContextEntry(
 	data: UpdateContextEntryData
 ): Promise<ContextEntryWithProjects> {
 	// Update the context entry title and/or content if provided
-	const updateData: { title?: string | null; content?: string } = {};
+	const updateData: { title?: string | null; content?: string | null } = {};
 	if (data.title !== undefined) {
 		updateData.title = data.title || null;
 	}
 	if (data.content !== undefined) {
-		updateData.content = data.content;
+		updateData.content = data.content || null;
 	}
 
 	if (Object.keys(updateData).length > 0) {

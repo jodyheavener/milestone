@@ -27,17 +27,16 @@ export async function action({ request, context }: Route.ActionArgs) {
 	const attachmentFile = formData.get("attachmentFile") as File | null;
 	const attachmentWebsiteUrl = formData.get("attachmentWebsiteUrl") as string;
 	const websitePageTitle = formData.get("websitePageTitle") as string;
-	const websiteExtractedContent = formData.get(
-		"websiteExtractedContent"
-	) as string;
 	const parsedFileData = formData.get("parsedFileData") as string;
 	const fileSize = formData.get("fileSize") as string;
 	const fileName = formData.get("fileName") as string;
 	const fileType = formData.get("fileType") as string;
 
-	if (!content) {
+	// Content is only required for manual entries
+	const trimmedContent = content ? content.toString().trim() : "";
+	if (!attachmentType && !trimmedContent) {
 		return {
-			error: "Content is required",
+			error: "Content is required for manual entries",
 		};
 	}
 
@@ -52,7 +51,6 @@ export async function action({ request, context }: Route.ActionArgs) {
 							? {
 									pageTitle: websitePageTitle,
 									suggestedTitle: title || websitePageTitle,
-									extractedContent: websiteExtractedContent,
 								}
 							: undefined,
 					parsedData: parsedFileData ? JSON.parse(parsedFileData) : undefined,
@@ -69,7 +67,7 @@ export async function action({ request, context }: Route.ActionArgs) {
 
 		await createContextEntry(supabase, user, {
 			title: title?.trim() || undefined,
-			content: content.toString().trim(),
+			content: trimmedContent || null, // Optional for file/website, required for manual
 			projectIds: projectIds.filter(Boolean),
 			attachment: attachmentData,
 		});

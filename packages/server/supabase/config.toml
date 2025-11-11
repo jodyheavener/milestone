@@ -400,3 +400,45 @@ enabled = true
 verify_jwt = true
 import_map = "./functions/deno.json"
 entrypoint = "./functions/authorize-operation/index.ts"
+
+[functions.chat]
+enabled = true
+verify_jwt = true
+import_map = "./functions/deno.json"
+entrypoint = "./functions/chat/index.ts"
+
+[functions.conversation]
+enabled = true
+verify_jwt = true
+import_map = "./functions/deno.json"
+entrypoint = "./functions/conversation/index.ts"
+
+[functions.conversation-chat]
+enabled = true
+verify_jwt = true
+import_map = "./functions/deno.json"
+entrypoint = "./functions/conversation-chat/index.ts"
+
+[functions.generate-context-summary]
+enabled = true
+verify_jwt = true
+import_map = "./functions/deno.json"
+entrypoint = "./functions/generate-context-summary/index.ts"
+
+[functions.generate-summary]
+enabled = true
+verify_jwt = true
+import_map = "./functions/deno.json"
+entrypoint = "./functions/generate-summary/index.ts"
+
+[functions.parse-file]
+enabled = true
+verify_jwt = true
+import_map = "./functions/deno.json"
+entrypoint = "./functions/parse-file/index.ts"
+
+[functions.parse-website]
+enabled = true
+verify_jwt = true
+import_map = "./functions/deno.json"
+entrypoint = "./functions/parse-website/index.ts"

@@ -1,12 +1,66 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib";
 import { logger } from "@/lib";
+import { embeddingToVector } from "@/lib";
 
 interface ContextItem {
 	text: string;
 	source_type: string;
 	source_id: string;
 	similarity?: number;
+}
+
+/**
+ * OpenAI Embedding Provider for server-side use
+ */
+class ServerEmbeddingProvider {
+	constructor(private apiKey: string) {}
+
+	async generateEmbedding(text: string, model: string): Promise<number[]> {
+		try {
+			const response = await fetch("https://api.openai.com/v1/embeddings", {
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${this.apiKey}`,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					input: text,
+					model: model,
+				}),
+			});
+
+			if (!response.ok) {
+				const errorText = await response.text();
+				logger.error("OpenAI API error", {
+					status: response.status,
+					statusText: response.statusText,
+					errorText,
+				});
+				throw new Error(
+					`OpenAI API error: ${response.status} ${response.statusText} - ${errorText}`,
+				);
+			}
+
+			const data = await response.json();
+			const embedding = data.data[0]?.embedding;
+
+			if (!embedding) {
+				logger.error("Invalid embedding response", { data });
+				throw new Error("Invalid embedding response from OpenAI API");
+			}
+
+			return embedding;
+		} catch (error) {
+			logger.error("Failed to generate embedding", {
+				error: error instanceof Error
+					? { message: error.message, stack: error.stack }
+					: String(error),
+				model,
+			});
+			throw error;
+		}
+	}
 }
 
 /**
@@ -23,11 +77,26 @@ export async function getProjectContext(
 		// Build contextual query from user message and conversation history
 		const contextualQuery = buildContextualQuery(query, conversationHistory);
 
+		// Generate query embedding
+		const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
+		if (!openaiApiKey) {
+			logger.error("OPENAI_API_KEY not set, falling back to text-only search");
+			// Fallback: get recent context entries directly
+			return await getRecentContextEntriesContext(supabase, projectId);
+		}
+
+		const embeddingProvider = new ServerEmbeddingProvider(openaiApiKey);
+		const queryEmbedding = await embeddingProvider.generateEmbedding(
+			contextualQuery,
+			"text-embedding-3-small",
+		);
+
 		// Use hybrid search to find relevant content chunks
 		const { data: searchResults, error: searchError } = await supabase.rpc(
 			"search_content_hybrid",
 			{
 				query_text: contextualQuery,
+				query_embedding: embeddingToVector(queryEmbedding),
 				project_id: projectId,
 				source_types: undefined, // Search all source types
 				match_threshold: 0.6, // Lower threshold to get more results
@@ -111,15 +180,7 @@ async function getRecentContextEntriesContext(
 				context_entry:context_entry_id (
 					id,
 					title,
-					content,
-					file (
-						id,
-						extracted_text
-					),
-					website (
-						id,
-						extracted_content
-					)
+					content
 				)
 			`,
 			)
@@ -137,40 +198,38 @@ async function getRecentContextEntriesContext(
 			const contextEntry = contextEntryProject.context_entry;
 			if (!contextEntry) continue;
 
-			// Add context entry content with title prefix if available
-			if (contextEntry.content) {
+			// Get summary from record table for this context entry
+			const { data: record } = await supabase
+				.from("record")
+				.select("content")
+				.eq("context_entry_id", contextEntry.id)
+				.order("created_at", { ascending: false })
+				.limit(1)
+				.single();
+
+			// Use summary if available, otherwise fall back to content
+			let text = "";
+			if (record?.content) {
+				// Extract summary text from JSONB content
+				const summary = record.content as {
+					tldr?: string;
+					key_takeaways?: string[];
+					[key: string]: unknown;
+				};
+				text = summary.tldr || JSON.stringify(summary);
+			} else if (contextEntry.content) {
+				text = contextEntry.content;
+			}
+
+			if (text) {
 				const titlePrefix = contextEntry.title
 					? `[${contextEntry.title}] `
 					: "";
 				contextItems.push({
-					text: `${titlePrefix}${contextEntry.content.substring(0, 1000)}`, // Limit length
+					text: `${titlePrefix}${text.substring(0, 1000)}`, // Limit length
 					source_type: "context_entry",
 					source_id: contextEntry.id,
 				});
-			}
-
-			// Add file content if available
-			if (contextEntry.file && contextEntry.file.length > 0) {
-				const file = contextEntry.file[0];
-				if (file.extracted_text) {
-					contextItems.push({
-						text: file.extracted_text.substring(0, 1000),
-						source_type: "file",
-						source_id: file.id,
-					});
-				}
-			}
-
-			// Add website content if available
-			if (contextEntry.website && contextEntry.website.length > 0) {
-				const website = contextEntry.website[0];
-				if (website.extracted_content) {
-					contextItems.push({
-						text: website.extracted_content.substring(0, 1000),
-						source_type: "website",
-						source_id: website.id,
-					});
-				}
 			}
 		}
 

@@ -244,6 +244,7 @@ $$;
 -- Function: Search content by text similarity (hybrid search)
 create or replace function public.search_content_hybrid(
   query_text text,
+  query_embedding extensions.vector(1536),
   project_id uuid,
   source_types text[] default null,
   match_threshold float default 0.7,
@@ -265,13 +266,8 @@ security definer
 set search_path = public, extensions
 as $$
 declare
-  query_embedding extensions.vector(1536);
   query_tsv tsvector;
 begin
-  -- Generate embedding for the query (this would need to be done in application code)
-  -- For now, we'll use a placeholder
-  query_embedding := array_fill(0, array[1536])::extensions.vector(1536);
-  
   -- Create tsvector for text search
   query_tsv := to_tsvector('english', query_text);
   

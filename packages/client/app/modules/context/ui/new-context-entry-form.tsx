@@ -56,7 +56,7 @@ export function NewContextEntryForm({
 				parsedData: result.parsedData,
 			});
 			setTitle(result.parsedData.title);
-			setContent(result.parsedData.summary);
+			// Don't set content - user will enter their interpretation
 		} catch (error) {
 			console.error("File upload/parsing error:", error);
 			alert("Failed to upload and parse file. Please try again.");
@@ -89,7 +89,7 @@ export function NewContextEntryForm({
 			const scanned = await scanWebsite(supabase, websiteUrl);
 			setScannedWebsite(scanned);
 			setTitle(scanned.suggestedTitle);
-			setContent(scanned.summary);
+			// Don't set content - user will enter their interpretation
 		} catch (error) {
 			console.error("Website scanning error:", error);
 			alert("Failed to scan website. Please try again.");
@@ -347,18 +347,28 @@ export function NewContextEntryForm({
 								htmlFor="content"
 								className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
 							>
-								Content
+								Content{" "}
+								<span className="text-muted-foreground">(optional)</span>
 							</label>
 							<textarea
 								id="content"
 								name="content"
-								required
 								rows={8}
 								value={content}
 								onChange={(e) => setContent(e.target.value)}
 								className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[120px] resize-none"
-								placeholder="Enter your context entry content here..."
+								placeholder={
+									creationMethod === "manual"
+										? "Enter your context entry content here..."
+										: "How should this be interpreted by the model? (optional)"
+								}
 							/>
+							{creationMethod !== "manual" && (
+								<p className="text-xs text-muted-foreground">
+									Use this field to provide context about what this file/website
+									represents or how it should be interpreted by the model.
+								</p>
+							)}
 						</div>
 					) : null}
 
@@ -398,11 +408,6 @@ export function NewContextEntryForm({
 										name="websitePageTitle"
 										value={scannedWebsite.pageTitle}
 									/>
-									<input
-										type="hidden"
-										name="websiteExtractedContent"
-										value={scannedWebsite.extractedContent}
-									/>
 								</>
 							)}
 							{creationMethod === "file" && uploadedFile && (
@@ -437,14 +442,17 @@ export function NewContextEntryForm({
 						</>
 					)}
 
-					{/* Submit Button - Show when content is ready */}
+					{/* Submit Button - Show when ready */}
 					{(creationMethod === "file" && uploadedFile) ||
 					(creationMethod === "website" && scannedWebsite) ||
 					creationMethod === "manual" ? (
 						<div className="flex gap-4">
 							<button
 								type="submit"
-								disabled={isSubmitting || !content.trim()}
+								disabled={
+									isSubmitting ||
+									(creationMethod === "manual" && !content.trim())
+								}
 								className={cn(
 									"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
 									"h-10 px-4 py-2 flex-1 bg-primary text-primary-foreground hover:bg-primary/90"

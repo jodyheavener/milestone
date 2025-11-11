@@ -28,7 +28,7 @@ const ConversationRequestSchema = z.object({
 app.options("*", () => new Response(null, { status: 204 }));
 
 /**
- * Get project context entries with files and websites for context
+ * Get project context entries with summaries from record table
  */
 async function getProjectContext(
 	sbServiceClient: ReturnType<typeof getServiceClient>,
@@ -37,8 +37,6 @@ async function getProjectContext(
 	Array<{
 		title: string | null;
 		content: string;
-		file?: { extracted_text: string | null };
-		website?: { extracted_content: string | null };
 	}>
 > {
 	// Get context entries linked to this project
@@ -58,26 +56,14 @@ async function getProjectContext(
 		return [];
 	}
 
-	const contextEntryIds = contextEntryProjects.map((cep) =>
-		cep.context_entry_id
+	const contextEntryIds = contextEntryProjects.map(
+		(cep) => cep.context_entry_id,
 	);
 
-	// Get context entries with their files and websites
+	// Get context entries
 	const { data: contextEntries, error } = await sbServiceClient
 		.from("context_entry")
-		.select(
-			`
-			id,
-			title,
-			content,
-			file (
-				extracted_text
-			),
-			website (
-				extracted_content
-			)
-		`,
-		)
+		.select("id, title, content")
 		.in("id", contextEntryIds);
 
 	if (error) {
@@ -85,16 +71,38 @@ async function getProjectContext(
 		return [];
 	}
 
-	return (contextEntries || []).map((contextEntry) => ({
-		title: contextEntry.title,
-		content: contextEntry.content,
-		file: Array.isArray(contextEntry.file)
-			? contextEntry.file[0]
-			: contextEntry.file || undefined,
-		website: Array.isArray(contextEntry.website)
-			? contextEntry.website[0]
-			: contextEntry.website || undefined,
-	}));
+	// Get summaries from record table for each context entry
+	const contextWithSummaries = await Promise.all(
+		(contextEntries || []).map(async (contextEntry) => {
+			// Get latest summary from record table
+			const { data: record } = await sbServiceClient
+				.from("record")
+				.select("content")
+				.eq("context_entry_id", contextEntry.id)
+				.order("created_at", { ascending: false })
+				.limit(1)
+				.single();
+
+			// Use summary if available, otherwise fall back to content
+			let content = contextEntry.content;
+			if (record?.content) {
+				// Extract summary text from JSONB content
+				const summary = record.content as {
+					tldr?: string;
+					key_takeaways?: string[];
+					[key: string]: unknown;
+				};
+				content = summary.tldr || JSON.stringify(summary);
+			}
+
+			return {
+				title: contextEntry.title,
+				content,
+			};
+		}),
+	);
+
+	return contextWithSummaries;
 }
 
 /**
@@ -104,8 +112,6 @@ function buildContextString(
 	contextEntries: Array<{
 		title: string | null;
 		content: string;
-		file?: { extracted_text: string | null };
-		website?: { extracted_content: string | null };
 	}>,
 	projectGoal: string,
 ): string {
@@ -116,26 +122,7 @@ function buildContextString(
 		context += `Context Entry ${index + 1}${
 			contextEntry.title ? `: ${contextEntry.title}` : ""
 		}:\n`;
-		context += `Content: ${contextEntry.content}\n`;
-
-		if (contextEntry.file?.extracted_text) {
-			context += `File Content: ${
-				contextEntry.file.extracted_text.substring(
-					0,
-					2000,
-				)
-			}\n`;
-		}
-
-		if (contextEntry.website?.extracted_content) {
-			context += `Website Content: ${
-				contextEntry.website.extracted_content.substring(
-					0,
-					2000,
-				)
-			}\n`;
-		}
-
+		context += `Content: ${contextEntry.content.substring(0, 2000)}\n`;
 		context += "\n---\n\n";
 	});
 

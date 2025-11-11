@@ -18,16 +18,14 @@ export interface ContextEntryWithProjects extends ContextEntry {
 
 export interface CreateContextEntryData {
 	title?: string;
-	content: string;
+	content: string | null;
 	projectIds?: string[];
 	attachment?: {
 		type: "file" | "website";
-		file?: File;
 		websiteUrl?: string;
 		websiteData?: {
 			pageTitle: string;
 			suggestedTitle: string;
-			extractedContent: string;
 		};
 		parsedData?: {
 			extractedText: string;
@@ -46,6 +44,6 @@ export interface CreateContextEntryData {
 
 export interface UpdateContextEntryData {
 	title?: string;
-	content?: string;
+	content?: string | null;
 	projectIds?: string[];
 }
